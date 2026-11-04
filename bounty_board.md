@@ -39,6 +39,14 @@
 - **AI Engineering & Game Concepts Unlocked:** Scene state transitions (`overworld` <-> `interior_scene`), context-scoped AI agents per room, spatial trigger zones.
 - **Prerequisite:** Stage 2 Village Map Online.
 
+### 🎯 BOUNTY #005: KINETIC DECONSTRUCTOR & RPG SKILL TREE (Calisthenics AI Coach)
+- **Sector:** `04 · The Kinetic Dojo`
+- **The Vision:** 
+  1. **AI Move Deconstructor:** An agent where you type any target calisthenics skill (e.g., Handstand, Muscle-Up, Pistol Squat, L-Sit). The AI analyzes the biomechanics, breaks it down into primary/secondary muscle groups and prerequisite baseline progressions (e.g., Hollow Body Hold $\rightarrow$ Scapular Pulls $\rightarrow$ Negative Dip), and generates a personalized HIIT/progression workout.
+  2. **Dragon Age RPG Skill Tree:** An interactive visual constellation tree (like *Dragon Age* or *Skyrim*). Nodes start locked in fog; as you log reps and master baseline moves, branch lines glow and unlock advanced movements, awarding XP and physical badges to your avatar.
+- **AI Engineering & Game Concepts Unlocked:** Directed Acyclic Graph (DAG) progression trees, biomechanical prompt schemas, dynamic HIIT workout generation, interactive SVG/Canvas node graph.
+- **Prerequisite:** Kinetic Dojo Level 2.
+
 ---
 
 ## 💡 RAW IDEA DROPZONE
