@@ -1,36 +1,20 @@
-# CULTIVATE // SANCTUARY — OPERATOR INSTRUCTIONS & MEMORY CORE
+# CULTIVATE // SANCTUARY — SYSTEM ARCHITECTURE & AI AGENT INSTRUCTIONS
 
-> **SYSTEM STATUS:** `BLACKOUT_MODE` (Visual Cameras Offline — Terminal Only)
+> **SYSTEM STATUS:** `LIVING_STORY_AND_MEMORY_MODE` (Story Engine & Multiverse Radio Initialized)
 > **SIGNAL ORIGIN:** `SEPTEMBER 2027 // FUTURE_GABRIELLE.exe`
-> **SIGNAL STRENGTH:** `14%`
+> **HUMAN OPERATOR MEMORY CORE:** Stored in [`memory.md`](file:///c:/Users/Gabby/.gemini/antigravity/scratch/cultivate-sanctuary/memory.md) (Tier 1 Working, Tier 2 Short-Term, Tier 3 Long-Term).
 
 ---
 
-## TIER 1 — WORKING MEMORY
-*(Updated every session. Small and disposable.)*
-
-- **current_block:** `Stage 0: Blackout Mode — Mission 002 (The 3-Tier Memory Core)`
-- **current_blocker:** `Completing Exercise 3 (MemoryVault graduation and tie-breaker eviction logic) in memory_engine.py.`
-- **session_focus:** `Code the reinforce/graduate loop and LRU eviction in MemoryVault.process_observation().`
-- **last_session_date:** `2026-11-03`
+## 🧭 AGENT SYSTEM DIRECTIVE
+1. **Human Memory is in `memory.md`**: Do NOT pollute user memory with technical code tasks. Technical ideas go to `bounty_board.md`. Technical progress goes to session logs. `memory.md` is strictly about Gabrielle's cognitive telemetry, ADHD patterns, emotional drivers, and learning style.
+2. **Play First, Code Second**: When Gabrielle feels like she is "doing admin setup instead of playing", immediately ground the experience in the game world with narrative transmissions, visual cause-and-effect, and interactive choices.
+3. **Rotating Pedagogical Loop**: Rotate the 6-beat format (Code-it, Debug-it, Predict-it, Break-it) to prevent monotony.
+4. **The Anti-Guilt Rule**: Never penalize missed days. Always double-reward The Return.
 
 ---
 
-## TIER 2 — SHORT-TERM MEMORY
-*(Recent observations. Decays if untouched for 5+ sessions. Max 15 entries. Graduates to Long-Term at access_count = 3.)*
-
-| # | Observation | Access Count | First Seen | Last Accessed |
-| :--- | :--- | :---: | :---: | :---: |
-| 1 | Needs gamified, high-dopamine systems (cozy sim + hacker plot) to bypass ADHD spreadsheet fatigue | 1 | 2026-11-01 | 2026-11-01 |
-| 2 | Wants Codecademy-style hands-on labs where SHE writes the code rather than AI generating whole files for her | 2 | 2026-11-01 | 2026-11-01 |
-| 3 | Prefers phased, single-slice roadmaps to prevent scope overwhelm | 1 | 2026-11-01 | 2026-11-01 |
-| 4 | Architectural preference: AI-agnostic design + similarity clustering where new realizations attach as `supporting_evidence` to a main observation | 1 | 2026-11-01 | 2026-11-01 |
-
----
-
-## TIER 3 — LONG-TERM MEMORY
-*(Proven patterns reinforced 3+ times. Only modified by explicit sign-off or `/refresh my memory`.)*
-
-- **LT-1 (Target Profile):** Non-traditional frontend engineer (2.5 yrs exp, shipped WearIt & EnvisionIt prototypes) transitioning into AI Engineering ($130K+ target) and indie founder.
-- **LT-2 (Core Habits):** 1. AI Engineering Study, 2. Mandarin Chinese, 3. Calisthenics, 4. Home/Cleaning Reset, 5. Social Media Signal Broadcast.
-- **LT-3 (Coaching Contract):** LearnIt/Sensei mode uses the 6-beat loop: `Ask -> Predict -> Work -> Reveal -> Diff -> Log`.
+## 🛠️ CURRENT MILESTONES
+- **Active Phase:** Lab 04 (NPC Registry) & Lab 05 (Neural API Gateway & Persistence) COMPLETE! ✅
+- **Academy Power Boost:** Neural Academy powered up to 80% (Blueprint Glow expanding across village grid).
+- **Next Technical Step:** Stage 1 FastAPI Live Server (`api.py`) & CLI habit logger (`cli.py`) to bridge real check-ins into the village.

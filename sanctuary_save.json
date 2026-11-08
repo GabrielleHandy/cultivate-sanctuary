@@ -1,0 +1,137 @@
+{
+  "world": {
+    "world_name": "CULTIVATE // SANCTUARY",
+    "signal_strength": 14,
+    "grid_mode": "blackout_terminal",
+    "avatar": {
+      "name": "Gabrielle",
+      "x": 80,
+      "y": 20,
+      "facing": "right",
+      "is_walking": false,
+      "render_stage": "wireframe",
+      "unlocked_layers": [
+        "base_body"
+      ],
+      "primary_color": "#a78bfa"
+    },
+    "sectors": [
+      {
+        "id": "safe_house",
+        "name": "05 \u00b7 The Safe House & Atelier (WearIt)",
+        "map_position": "top_left",
+        "x": 20,
+        "y": 20,
+        "habit_fuel": "cleaning",
+        "is_online": false,
+        "level": 1,
+        "power_level": 20,
+        "visual_state": "blackout_wireframe",
+        "unlocked_upgrades": [
+          "Wireframe Mannequin"
+        ]
+      },
+      {
+        "id": "neural_academy",
+        "name": "02 \u00b7 The Neural Academy (LearnIt)",
+        "map_position": "top_right",
+        "x": 80,
+        "y": 20,
+        "habit_fuel": "ai_engineering",
+        "is_online": true,
+        "level": 1,
+        "power_level": 85,
+        "visual_state": "blueprint_glow",
+        "unlocked_upgrades": [
+          "Pydantic Schema Terminal"
+        ]
+      },
+      {
+        "id": "cipher_teahouse",
+        "name": "03 \u00b7 The Cipher Tea House (Mandarin)",
+        "map_position": "mid_left",
+        "x": 18,
+        "y": 52,
+        "habit_fuel": "mandarin",
+        "is_online": false,
+        "level": 1,
+        "power_level": 10,
+        "visual_state": "blackout_wireframe",
+        "unlocked_upgrades": []
+      },
+      {
+        "id": "memory_vault",
+        "name": "01 \u00b7 The Memory Vault (Town Hall / EnvisionIt)",
+        "map_position": "mid_right",
+        "x": 82,
+        "y": 52,
+        "habit_fuel": "memory_core",
+        "is_online": true,
+        "level": 1,
+        "power_level": 14,
+        "visual_state": "blueprint_glow",
+        "unlocked_upgrades": [
+          "2027 Signal Receiver"
+        ]
+      },
+      {
+        "id": "kinetic_dojo",
+        "name": "04 \u00b7 The Kinetic Dojo (Calisthenics)",
+        "map_position": "bottom_center",
+        "x": 50,
+        "y": 85,
+        "habit_fuel": "calisthenics",
+        "is_online": false,
+        "level": 1,
+        "power_level": 15,
+        "visual_state": "blackout_wireframe",
+        "unlocked_upgrades": []
+      }
+    ],
+    "bounties": [
+      {
+        "id": "BOUNTY-001",
+        "title": "Sanctuary News Network (SNN)",
+        "sector_id": "memory_vault",
+        "description": "AI News broadcast show with cute anchor avatars.",
+        "required_level": 2,
+        "status": "locked"
+      },
+      {
+        "id": "BOUNTY-002",
+        "title": "Bio-Telemetry Link",
+        "sector_id": "kinetic_dojo",
+        "description": "Sync smartwatch/fitness tracker to auto-power the Dojo.",
+        "required_level": 3,
+        "status": "locked"
+      },
+      {
+        "id": "BOUNTY-003",
+        "title": "Sonic Resonance Engine",
+        "sector_id": "safe_house",
+        "description": "Future Gabrielle monitors music/Spotify & recommends focus vibes.",
+        "required_level": 2,
+        "status": "locked"
+      },
+      {
+        "id": "BOUNTY-004",
+        "title": "Enterable Building Interiors",
+        "sector_id": "safe_house",
+        "description": "Walk through the front door of any building into a custom 2D indoor room (WearIt Closet, Memory Desk, Tea Counter, Coding Lab, Dojo Floor).",
+        "required_level": 2,
+        "status": "locked"
+      }
+    ]
+  },
+  "vault": [
+    {
+      "id": 1,
+      "observation": "Deployed FastAPI REST gateway",
+      "supporting_evidence": [],
+      "access_count": 1,
+      "first_seen_session": 1,
+      "last_accessed_session": 1
+    }
+  ],
+  "session": 1
+}

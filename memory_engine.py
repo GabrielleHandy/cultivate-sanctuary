@@ -85,7 +85,7 @@ class MemoryVault(BaseModel):
     items: List[ShortTermObservation] = Field(default_factory=list)
     max_slots: int = 15
     similarity_threshold: float = 0.20
-
+    
     def process_observation(self, new_text: str, session_num: int) -> dict:
         """Processes a new realization and returns what action occurred."""
         # Step 1: Search for a similar existing observation
@@ -102,17 +102,22 @@ class MemoryVault(BaseModel):
         if best_match:
             # TODO 3A:
             # 1. Increment best_match.access_count by 1
+            best_match.access_count+= 1
             # 2. Set best_match.last_accessed_session = session_num
+            best_match.last_accessed_session = session_num
             # 3. Append new_text to best_match.supporting_evidence
-            # 4. If best_match.access_count >= 3:
-            #       self.items.remove(best_match)
-            #       return {"action": "graduated", "item": best_match}
-            #    Else:
-            #       return {"action": "reinforced", "item": best_match}
-            pass
+            best_match.supporting_evidence.append(new_text)
+            if best_match.access_count >=3:
+                self.items.remove(best_match)
+                return {"action": "graduated", "item":best_match}
+            else:
+                return {"action": "reinforced", "item": best_match}   
 
         # ─── CASE B: NO MATCH (ADD NEW & HANDLE EVICTION IF FULL) ──────────
         # TODO 3B: If self.items is at max_slots (len(self.items) >= self.max_slots):
+        if len(self.items) >= self.max_slots:
+            least_accessed = min(self.items, key=lambda x: (x.access_count, x.last_accessed_session))
+            self.items.remove(least_accessed)
         # We need to evict the entry with the lowest access_count!
         # If there's a tie, evict the one with the oldest last_accessed_session.
         # Hint: In Python, you can find the candidate using min():

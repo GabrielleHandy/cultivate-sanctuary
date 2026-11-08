@@ -47,6 +47,24 @@
 - **AI Engineering & Game Concepts Unlocked:** Directed Acyclic Graph (DAG) progression trees, biomechanical prompt schemas, dynamic HIIT workout generation, interactive SVG/Canvas node graph.
 - **Prerequisite:** Kinetic Dojo Level 2.
 
+### 🎯 BOUNTY #006: SANCTUARY PACKS (Shareable NPC / Goal / Teacher Harness)
+- **Sector:** `All Sectors` + `Memory Vault` (pack library)
+- **The Vision:** Build and share your own NPCs, goal frameworks and teachers as portable **packs**, like a harness anyone can plug in. Make a pack (e.g. "Mandarin Tea Auntie", "Calisthenics Sensei", "Interview Prep Coach"), export it as one file, and someone else imports it into their own village. Each NPC has a name, species, personality traits, catchphrase, what it teaches, unlock condition and lesson style.
+  - **Personality traits** drive how NPCs talk, tease and teach.
+  - **Goals and teachers** are data too: a pack can bundle a vision-board template, a lesson loop (Ask, Predict, Work, Reveal, Diff, Log) and the Static blockers it fights.
+  - **Professor Pydantic as gatekeeper:** every imported pack is validated before it enters the village.
+  - New NPCs appear as the village grows, so packs unlock by signal or level.
+- **AI Engineering Concepts Unlocked:** Pydantic schemas as a shareable contract, JSON/YAML import/export, schema versioning and migration, plugin/registry architecture, **prompt-injection safety for untrusted packs** (sanitize persona text, never run pack code), model-agnostic persona prompts.
+- **Design Notes:** Packs are **data only, never code**. Include a `schema_version` and a `pack_id`. Keep the personal Static-blocker data separate from any shared pack.
+- **Prerequisite:** Lab 04 (NPC Registry) complete, plus Stage 1 core engine.
+- **Personality System (Sims-style):** each NPC gets **up to 3 traits + 1 quirk**. Traits change how they teach (a *Strict* teacher gives tougher checks, a *Cheerful* one hypes small wins, an *Overthinker* says "ship it"), and clashing traits make funny banter. Candidate trait set:
+  - **Emotional:** Cheerful, Gloomy, Hot-headed, Anxious, Dramatic, Serene, Sentimental, Sarcastic, Hopeful, Grumpy-but-Soft
+  - **Social:** Outgoing, Shy, Charming, Blunt, Gossipy, Loyal, Mischievous, Nurturing, Competitive, Awkward
+  - **Mind & Work:** Perfectionist, Curious, Analytical, Absent-minded, Scatterbrained, Disciplined, Procrastinator, Overthinker, Strict, Big-Picture
+  - **Hobbies & Lifestyle:** Bookworm, Foodie, Night Owl, Early Bird, Neat Freak, Collector, Artsy, Music Lover, Gym Rat, Homebody, Tea Snob
+  - **Quirks (pick 1):** Counts everything out loud, Speaks in schemas, Files everything, Says "per my records", Switches languages when you relax, Pins things upside-down, Narrates in third person, Fears bugs (the literal kind)
+  - **Open question:** fixed `Literal` set vs free-form with a length limit (maybe a few custom slots for shared packs).
+
 ---
 
 ## 💡 RAW IDEA DROPZONE
