@@ -1,7 +1,7 @@
 {
   "world": {
     "world_name": "CULTIVATE // SANCTUARY",
-    "signal_strength": 14,
+    "signal_strength": 18,
     "grid_mode": "blackout_terminal",
     "avatar": {
       "name": "Gabrielle",
@@ -40,7 +40,7 @@
         "habit_fuel": "ai_engineering",
         "is_online": true,
         "level": 1,
-        "power_level": 85,
+        "power_level": 25,
         "visual_state": "blueprint_glow",
         "unlocked_upgrades": [
           "Pydantic Schema Terminal"
@@ -68,7 +68,7 @@
         "habit_fuel": "memory_core",
         "is_online": true,
         "level": 1,
-        "power_level": 14,
+        "power_level": 25,
         "visual_state": "blueprint_glow",
         "unlocked_upgrades": [
           "2027 Signal Receiver"
@@ -83,7 +83,7 @@
         "habit_fuel": "calisthenics",
         "is_online": false,
         "level": 1,
-        "power_level": 15,
+        "power_level": 10,
         "visual_state": "blackout_wireframe",
         "unlocked_upgrades": []
       }
