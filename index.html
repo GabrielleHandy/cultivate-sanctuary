@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <title>Cultivate // Sanctuary — Living State Engine</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/PLYLoader.js"></script>
   <style>
     body { background-color: #060810; }
     .hud-card {
@@ -64,8 +67,11 @@
   <nav class="w-full max-w-[1120px] flex flex-wrap items-center justify-between gap-2 mb-2.5 px-3.5 py-2 rounded-xl hud-card shadow-xl font-mono text-xs border border-amber-500/25">
     <div class="flex items-center gap-1.5 flex-wrap">
       <span class="text-[10px] text-amber-300/90 font-bold uppercase tracking-wider mr-1">🗺️ Scene:</span>
-      <button id="sceneTab_overworld" onclick="switchScene('overworld')" class="px-2.5 py-1 rounded-lg bg-amber-500/25 text-amber-200 border border-amber-400/60 font-bold transition cursor-pointer flex items-center gap-1 shadow-[0_0_10px_rgba(245,158,11,0.25)]">
-        <span>🌳</span><span>Town Plaza</span>
+      <button id="sceneTab_town3d" onclick="switchScene('town3d')" class="px-2.5 py-1 rounded-lg bg-amber-500/25 text-amber-200 border border-amber-400/60 font-bold transition cursor-pointer flex items-center gap-1 shadow-[0_0_10px_rgba(245,158,11,0.25)]">
+        <span>🌍</span><span>3D Walkable Town</span>
+      </button>
+      <button id="sceneTab_overworld" onclick="switchScene('overworld')" class="px-2.5 py-1 rounded-lg bg-black/40 hover:bg-amber-950/40 text-slate-300 hover:text-amber-200 border border-white/10 transition cursor-pointer flex items-center gap-1">
+        <span>🗺️</span><span>2D Map</span>
       </button>
       <button id="sceneTab_safe_house" onclick="switchScene('safe_house')" class="px-2.5 py-1 rounded-lg bg-black/40 hover:bg-amber-950/40 text-slate-300 hover:text-amber-200 border border-white/10 transition cursor-pointer flex items-center gap-1">
         <span>🏡</span><span>Safe House Room</span>
@@ -88,8 +94,11 @@
       <button id="stickerModeBtn" onclick="toggleStickerMode()" class="px-3 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 font-bold transition cursor-pointer flex items-center gap-1.5">
         <span>✨</span><span id="stickerModeLabel">Decorate Stickers: OFF</span>
       </button>
-      <button onclick="openStickerForgeModal()" class="px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500/30 to-orange-500/30 hover:from-amber-500/40 hover:to-orange-500/40 text-amber-100 border border-amber-400/50 font-bold transition cursor-pointer flex items-center gap-1.5 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
-        <span>🎨</span><span>+ Prompt / Create Sticker</span>
+      <button onclick="openOpenArtModal()" class="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-500/30 to-cyan-500/30 hover:from-emerald-500/45 hover:to-cyan-500/45 text-emerald-200 border border-emerald-400/60 font-bold transition cursor-pointer flex items-center gap-1.5 shadow-[0_0_14px_rgba(16,185,129,0.25)]">
+        <span>🌐</span><span>OpenArt 3D World</span>
+      </button>
+      <button onclick="openStickerForgeModal()" class="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500/30 to-orange-500/30 hover:from-amber-500/40 hover:to-orange-500/40 text-amber-100 border border-amber-400/50 font-bold transition cursor-pointer flex items-center gap-1.5 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
+        <span>🎨</span><span>+ Sticker</span>
       </button>
     </div>
   </nav>
@@ -100,7 +109,14 @@
     <!-- LEFT: VILLAGE CANVAS & WEARIT CLOSET -->
     <div class="flex flex-col items-center w-full lg:w-auto">
       <div class="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_35px_rgba(0,0,0,0.85)] bg-slate-950">
-        <canvas id="villageCanvas" width="500" height="494" class="block cursor-crosshair"></canvas>
+        <canvas id="town3dCanvas" width="500" height="494" class="block cursor-grab active:cursor-grabbing"></canvas>
+        <canvas id="villageCanvas" width="500" height="494" class="hidden cursor-crosshair"></canvas>
+        <!-- Drag-and-Drop 3D World Overlay -->
+        <div id="drop3dOverlay" class="hidden absolute inset-0 bg-emerald-950/90 backdrop-blur-md border-2 border-dashed border-emerald-400 flex flex-col items-center justify-center p-6 text-center z-30 pointer-events-none">
+          <div class="text-3xl mb-2">🌐</div>
+          <div class="font-mono font-bold text-sm text-emerald-200">DROP OPENART 3D WORLD FILE (.GLB / .PLY)</div>
+          <div class="font-mono text-xs text-emerald-300/80 mt-1">Chibi Gabrielle will automatically spawn on your 3D terrain!</div>
+        </div>
 
         <!-- Dynamic Overlay Badges -->
         <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5 pointer-events-none">
@@ -144,7 +160,7 @@
 
         <div class="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
           <span id="canvasControlHint" class="px-2.5 py-1 rounded-lg bg-black/85 text-slate-200 border border-white/15 font-mono text-xs shadow-lg backdrop-blur-md">
-            🎮 Click Furniture or Walk • Click Building to Enter
+            🎮 WASD/Click Walk • Drag Orbit 360° • Scroll Zoom • [E] Enter Room
           </span>
           <button id="enterBuildingFloatingBtn" onclick="enterActiveBuildingRoom()" class="hidden pointer-events-auto px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono font-bold text-xs shadow-[0_0_15px_#f59e0b] transition cursor-pointer animate-bounce">
             🏠 Enter Cutaway Room [E]
@@ -597,6 +613,105 @@
           <button id="saveImportedStickerBtn" onclick="saveImportedStickerToBinder()" disabled class="mt-auto py-1.5 px-3 rounded-lg bg-amber-500/30 text-amber-200/50 border border-amber-500/30 font-bold text-xs transition cursor-not-allowed">
             📥 Import Image to Binder
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: OPENART 3D WORLD LOADER & SPATIAL AI STUDIO -->
+  <div id="openArtModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="w-full max-w-[680px] rounded-2xl hud-modal p-4 sm:p-5 flex flex-col gap-3 font-mono text-xs max-h-[92vh] overflow-y-auto border border-emerald-400/50">
+      <div class="flex items-center justify-between pb-2.5 border-b border-emerald-500/30">
+        <div>
+          <div class="font-bold text-sm text-emerald-300 flex items-center gap-2">
+            <span>🌐 OPENART 3D WORLD LOADER & SPATIAL STUDIO</span>
+            <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-200 border border-emerald-500/40">THREE.JS .GLB / .PLY</span>
+          </div>
+          <div class="text-[10px] text-slate-400 mt-0.5">
+            Generate navigable 3D worlds in OpenArt Worlds (World Labs Spatial AI) & drop the exported <code class="text-emerald-300">.glb</code> or <code class="text-emerald-300">.ply</code> directly into your town!
+          </div>
+        </div>
+        <button onclick="closeOpenArtModal()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 cursor-pointer">✕</button>
+      </div>
+
+      <!-- STEP 1: GENERATE IN OPENART WORLDS (COPYABLE PROMPTS + DIRECT LINK) -->
+      <div class="p-3 rounded-xl bg-emerald-950/25 border border-emerald-500/30 flex flex-col gap-2">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <span class="text-[10.5px] font-bold text-emerald-300 uppercase">1. Create a 3D World on OpenArt Suite:</span>
+          <a href="https://openart.ai/suite/world?create_world=true" target="_blank" rel="noopener noreferrer" class="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-[11px] transition flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.4)]">
+            <span>🚀 Open OpenArt 3D World Creator</span><span>↗</span>
+          </a>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px]">
+          <button onclick="setOpenArtPreset('plaza')" class="px-2 py-1.5 rounded-lg bg-black/50 hover:bg-emerald-950/60 border border-emerald-500/30 text-emerald-200 text-left transition cursor-pointer">
+            <div class="font-bold">🌳 Town Courtyard</div>
+            <div class="text-[9px] text-slate-400">Central Plaza & Tree</div>
+          </button>
+          <button onclick="setOpenArtPreset('safe_house')" class="px-2 py-1.5 rounded-lg bg-black/50 hover:bg-emerald-950/60 border border-white/10 text-slate-200 text-left transition cursor-pointer">
+            <div class="font-bold">🏡 Treehouse Loft</div>
+            <div class="text-[9px] text-slate-400">Safe House & Atelier</div>
+          </button>
+          <button onclick="setOpenArtPreset('academy')" class="px-2 py-1.5 rounded-lg bg-black/50 hover:bg-emerald-950/60 border border-white/10 text-slate-200 text-left transition cursor-pointer">
+            <div class="font-bold">🧠 Conservatory</div>
+            <div class="text-[9px] text-slate-400">Neural Academy</div>
+          </button>
+          <button onclick="setOpenArtPreset('tea_house')" class="px-2 py-1.5 rounded-lg bg-black/50 hover:bg-emerald-950/60 border border-white/10 text-slate-200 text-left transition cursor-pointer">
+            <div class="font-bold">🍵 Tea Pavilion</div>
+            <div class="text-[9px] text-slate-400">Lantern Garden</div>
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between mt-0.5">
+          <span class="text-[10px] text-slate-400">Optimized Spatial Prompt for OpenArt Worlds:</span>
+          <button onclick="copyOpenArtPrompt()" id="copyOpenArtPromptBtn" class="px-2.5 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold cursor-pointer">📋 Copy 3D World Prompt</button>
+        </div>
+        <textarea id="openArtPromptBox" rows="3" class="w-full p-2 rounded-lg bg-slate-950 border border-white/10 text-slate-200 text-[10.5px] leading-relaxed focus:outline-none">Cozy sunlit Ghibli village courtyard at golden hour, warm cobblestone central plaza with an ancient glowing cherry blossom tree in the center, surrounded by warm timber cottages with terracotta roofs, wooden bridges over a crystal stream, lush stylized greenery, warm amber sunlight, walkable ground plane.</textarea>
+      </div>
+
+      <!-- STEP 2: UPLOAD OR DRAG-AND-DROP EXPORTED .GLB / .PLY FILE -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div class="p-3 rounded-xl bg-slate-900/90 border border-emerald-500/40 flex flex-col gap-2">
+          <div class="font-bold text-emerald-300 text-[11px] flex items-center justify-between">
+            <span>📥 2. Load Exported .GLB / .PLY World</span>
+            <span id="openArtStatusBadge" class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Built-In 3D Town Active</span>
+          </div>
+          <p class="text-[10px] text-slate-400 leading-relaxed">
+            In OpenArt Worlds, click <b>Download / Export</b> and choose <b>Mesh (<code class="text-amber-300">.glb</code>)</b> or <b>Splat/Point Cloud (<code class="text-amber-300">.ply</code>)</b>. Upload it below or drag & drop it onto the 3D canvas!
+          </p>
+          <input id="openArtFileInput" type="file" accept=".glb,.gltf,.ply" onchange="handleOpenArtWorldUpload(event)" class="text-[10px] text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 cursor-pointer">
+          <div class="flex items-center gap-2 mt-auto pt-1">
+            <button onclick="resetToBuiltIn3DTown()" class="w-full py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 text-[10.5px] cursor-pointer transition">
+              ↺ Reset to Built-In 3D Sanctuary Town
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 3: LIVE 3D WORLD CALIBRATION & PORTAL OVERLAY CONTROLS -->
+        <div class="p-3 rounded-xl bg-slate-900/90 border border-cyan-500/30 flex flex-col gap-2">
+          <div class="font-bold text-cyan-300 text-[11px]">⚙️ 3. 3D World Calibration & Portals</div>
+          <div>
+            <div class="flex justify-between text-[10px] text-slate-300 mb-0.5">
+              <span>Imported World Scale:</span>
+              <span id="openArtScaleVal" class="text-emerald-300 font-bold">1.0x</span>
+            </div>
+            <input id="openArtScaleSlider" type="range" min="0.2" max="5.0" step="0.1" value="1.0" oninput="updateOpenArtTransform()" class="w-full accent-emerald-400 cursor-pointer">
+          </div>
+          <div>
+            <div class="flex justify-between text-[10px] text-slate-300 mb-0.5">
+              <span>Ground Y-Height Offset:</span>
+              <span id="openArtYOffsetVal" class="text-cyan-300 font-bold">0.0</span>
+            </div>
+            <input id="openArtYOffsetSlider" type="range" min="-8" max="8" step="0.2" value="0" oninput="updateOpenArtTransform()" class="w-full accent-cyan-400 cursor-pointer">
+          </div>
+          <div class="flex items-center gap-2 text-[10px] text-slate-200 pt-0.5">
+            <input id="hideBuiltInMeshCheck" type="checkbox" onchange="updateOpenArtTransform()" class="accent-emerald-400 cursor-pointer">
+            <label for="hideBuiltInMeshCheck" class="cursor-pointer">Show Imported OpenArt World Only (Hide Built-in Terrain)</label>
+          </div>
+          <div class="flex items-center gap-2 text-[10px] text-slate-200">
+            <input id="show3dPortalsCheck" type="checkbox" checked onchange="updateOpenArtTransform()" class="accent-amber-400 cursor-pointer">
+            <label for="show3dPortalsCheck" class="cursor-pointer">Keep 5 Interactive Building Room Portals Active</label>
+          </div>
         </div>
       </div>
     </div>
@@ -1548,12 +1663,26 @@
       // Update floating Enter Room button visibility
       const enterBtn = document.getElementById("enterBuildingFloatingBtn");
       if (enterBtn) {
-        if (state.activeScene === "overworld" && activeBuilding) {
+        if ((state.activeScene === "overworld" || state.activeScene === "town3d") && activeBuilding) {
           enterBtn.textContent = "🏠 Enter " + activeBuilding.short + " Room [E]";
           enterBtn.classList.remove("hidden");
         } else {
           enterBtn.classList.add("hidden");
         }
+      }
+
+      // LAYER 0: 3D WALKABLE TOWN MODE (WebGL canvas renders 3D; here we just refresh HUD Portrait & Floating Button)
+      if (state.activeScene === "town3d") {
+        pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+        const auraGrad = pCtx.createRadialGradient(60, 60, 10, 60, 60, 58);
+        auraGrad.addColorStop(0, "rgba(52, 211, 153, 0.35)");
+        auraGrad.addColorStop(1, "rgba(0,0,0,0)");
+        pCtx.fillStyle = auraGrad;
+        pCtx.beginPath();
+        pCtx.arc(60, 60, 58, 0, Math.PI * 2);
+        pCtx.fill();
+        drawSpriteCharacter(pCtx, 60, 60, true);
+        return;
       }
 
       // LAYER 2: ISOMETRIC CUTAWAY ROOM CUBE MODE
@@ -2052,7 +2181,7 @@
     const INK = "#4A2E1B"; // Warm Espresso-Brown Ink (Never harsh #000000)
     const DIE_CUT_CREAM = "#FFFBEB";
 
-    state.activeScene = "overworld"; // 'overworld' | 'safe_house' | 'ai_academy' | 'tea_house' | 'memory_vault' | 'kinetic_dojo'
+    state.activeScene = "town3d"; // Default to Walkable 3D Town! // 'overworld' | 'safe_house' | 'ai_academy' | 'tea_house' | 'memory_vault' | 'kinetic_dojo'
     state.stickerMode = false;
     state.stickerFilter = "all";
     state.selectedStickerUid = null;
@@ -3216,8 +3345,26 @@
       updateSelectedStickerBar();
       hideRoomToast();
 
+      // Toggle visibility between 3D WebGL Canvas and 2D Isometric/Map Canvas
+      const c3d = document.getElementById("town3dCanvas");
+      const c2d = document.getElementById("villageCanvas");
+      const hint = document.getElementById("canvasControlHint");
+      if (sceneId === "town3d") {
+        if (c3d) c3d.classList.remove("hidden");
+        if (c2d) c2d.classList.add("hidden");
+        if (hint) hint.textContent = "🎮 WASD/Click Walk • Drag Orbit 360° • Scroll Zoom • [E] Enter Room";
+      } else {
+        if (c3d) c3d.classList.add("hidden");
+        if (c2d) c2d.classList.remove("hidden");
+        if (hint && !state.stickerMode) {
+          hint.textContent = sceneId === "overworld"
+            ? "🎮 WASD/Click Walk • Click Building or Press [E] to Enter Room"
+            : "🎮 Click Furniture to Interact • Press [E] to Return to 3D Town";
+        }
+      }
+
       // Update Top Scene Navigation Pill Styles
-      const tabs = ["overworld", "safe_house", "ai_academy", "tea_house", "memory_vault", "kinetic_dojo"];
+      const tabs = ["town3d", "overworld", "safe_house", "ai_academy", "tea_house", "memory_vault", "kinetic_dojo"];
       for (let i = 0; i < tabs.length; i++) {
         const t = tabs[i];
         const btn = document.getElementById("sceneTab_" + t);
@@ -3230,7 +3377,7 @@
       }
 
       // Position Gabrielle on the Isometric Room Floor when entering a room
-      if (sceneId !== "overworld") {
+      if (sceneId !== "overworld" && sceneId !== "town3d") {
         state.avatar.x = 250;
         state.avatar.y = 335;
         state.avatar.targetX = null;
@@ -3603,10 +3750,10 @@
     window.addEventListener("keydown", function(e) {
       if (document.activeElement && ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) return;
       if (e.key === "e" || e.key === "E") {
-        if (state.activeScene === "overworld" && activeBuilding) {
+        if ((state.activeScene === "overworld" || state.activeScene === "town3d") && activeBuilding) {
           switchScene(activeBuilding.id);
-        } else if (state.activeScene !== "overworld") {
-          switchScene("overworld");
+        } else if (state.activeScene !== "overworld" && state.activeScene !== "town3d") {
+          switchScene("town3d");
         }
       }
       if (state.stickerMode && state.selectedStickerUid) {
@@ -3783,12 +3930,985 @@
       closeStickerForgeModal();
     }
 
+    // =========================================================================
+    // 🌍 THREE.JS 3D WALKABLE SANCTUARY TOWN + OPENART .GLB / .PLY WORLD ENGINE
+    // =========================================================================
+    const town3dCanvas = document.getElementById("town3dCanvas");
+    let scene3d, camera3d, renderer3d;
+    let builtInTownGroup, customWorldGroup, portalsGroup, clouds3dGroup, petals3dGroup;
+    let walkableMeshes = [];
+    let portalRings3d = [];
+    let buildingPointLights = {};
+    let signSprites3d = {};
+    let hemiLight3d, dirLight3d, plazaLight3d, waterMesh3d;
+
+    // 3D Avatar & Orbit Camera State
+    const av3d = {
+      x: 0,
+      y: 0,
+      z: 6.5,
+      vy: 0,
+      isGrounded: true,
+      targetX: null,
+      targetZ: null,
+      mesh: null,
+      shadowMesh: null,
+      spriteCanvas: null,
+      spriteCtx: null,
+      spriteTex: null
+    };
+
+    const camOrbit = {
+      yaw: 0.0,
+      pitch: 0.52,
+      dist: 22.0,
+      isDragging: false,
+      dragMoved: false,
+      downX: 0,
+      downY: 0,
+      lastX: 0,
+      lastY: 0
+    };
+
+    // 3D Coordinates for the 5 Sector Buildings & Bounty Board around the Central Tree Plaza
+    const BUILDINGS_3D_LAYOUT = {
+      safe_house:   { x: -13.5, z: -10.5, portalX: -10.2, portalZ: -7.8, color: 0x34d399, roofCol: 0xc86d51, wallCol: 0xf3e5ab },
+      ai_academy:   { x:  14.0, z: -10.5, portalX:  10.5, portalZ: -7.8, color: 0x38bdf8, roofCol: 0x0284c7, wallCol: 0xd8c3a5 },
+      tea_house:    { x: -14.0, z:  10.0, portalX: -10.5, portalZ:  7.5, color: 0xfbbf24, roofCol: 0xbc6c25, wallCol: 0xe9edc9 },
+      memory_vault: { x:  14.0, z:  10.0, portalX:  10.5, portalZ:  7.5, color: 0xa78bfa, roofCol: 0x7e22ce, wallCol: 0xe0c097 },
+      kinetic_dojo: { x:   0.0, z:  16.5, portalX:   0.0, portalZ: 12.6, color: 0xfb7185, roofCol: 0x52796f, wallCol: 0xdce2bd }
+    };
+    const BOUNTY_3D_POS = { x: -4.2, z: 3.6 };
+
+    function createSignTexture3D(titleText, powerPct, accentHex, isRestored) {
+      const c = document.createElement("canvas");
+      c.width = 256;
+      c.height = 72;
+      const cx = c.getContext("2d");
+
+      cx.fillStyle = isRestored ? "rgba(254, 243, 199, 0.95)" : "rgba(15, 23, 42, 0.92)";
+      cx.strokeStyle = accentHex;
+      cx.lineWidth = 4;
+      cx.beginPath();
+      cx.roundRect(6, 6, 244, 60, 14);
+      cx.fill();
+      cx.stroke();
+
+      cx.fillStyle = isRestored ? "#4a2e1b" : "#f8fafc";
+      cx.font = "bold 17px monospace";
+      cx.textAlign = "center";
+      cx.fillText(titleText, 128, 30);
+
+      // Power bar
+      cx.fillStyle = "rgba(0,0,0,0.5)";
+      cx.fillRect(38, 42, 180, 10);
+      cx.fillStyle = accentHex;
+      cx.fillRect(38, 42, Math.max(8, (180 * powerPct) / 100), 10);
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    function refresh3DSignboardsAndLights() {
+      if (!scene3d) return;
+      for (let i = 0; i < state.buildings.length; i++) {
+        const b = state.buildings[i];
+        const cfg = BUILDINGS_3D_LAYOUT[b.id];
+        if (!cfg) continue;
+        const sp = signSprites3d[b.id];
+        if (sp) {
+          if (sp.material.map) sp.material.map.dispose();
+          sp.material.map = createSignTexture3D(b.short + " (" + b.power + "%)", b.power, b.sign.color, b.power >= 100);
+          sp.material.needsUpdate = true;
+        }
+        const pt = buildingPointLights[b.id];
+        if (pt) {
+          pt.intensity = b.power >= 30 ? (0.6 + (b.power / 100) * 1.4) : 0.2;
+        }
+      }
+    }
+
+    function initTown3D() {
+      if (!town3dCanvas || typeof THREE === "undefined") return;
+
+      scene3d = new THREE.Scene();
+      scene3d.background = new THREE.Color(0xfde68a);
+      scene3d.fog = new THREE.FogExp2(0xfde68a, 0.012);
+
+      camera3d = new THREE.PerspectiveCamera(45, town3dCanvas.width / town3dCanvas.height, 0.1, 300);
+
+      renderer3d = new THREE.WebGLRenderer({ canvas: town3dCanvas, antialias: true });
+      renderer3d.setSize(town3dCanvas.width, town3dCanvas.height);
+      renderer3d.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer3d.shadowMap.enabled = true;
+      renderer3d.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      // Golden-Hour Hemisphere & Directional Sun Lighting
+      hemiLight3d = new THREE.HemisphereLight(0xfef3c7, 0x3f6212, 0.85);
+      hemiLight3d.position.set(0, 40, 0);
+      scene3d.add(hemiLight3d);
+
+      dirLight3d = new THREE.DirectionalLight(0xfde047, 1.15);
+      dirLight3d.position.set(24, 36, 18);
+      dirLight3d.castShadow = true;
+      dirLight3d.shadow.mapSize.width = 1024;
+      dirLight3d.shadow.mapSize.height = 1024;
+      dirLight3d.shadow.camera.near = 1;
+      dirLight3d.shadow.camera.far = 95;
+      const d = 28;
+      dirLight3d.shadow.camera.left = -d;
+      dirLight3d.shadow.camera.right = d;
+      dirLight3d.shadow.camera.top = d;
+      dirLight3d.shadow.camera.bottom = -d;
+      scene3d.add(dirLight3d);
+
+      plazaLight3d = new THREE.PointLight(0xfbbf24, 1.3, 22);
+      plazaLight3d.position.set(0, 4.5, 0);
+      scene3d.add(plazaLight3d);
+
+      builtInTownGroup = new THREE.Group();
+      customWorldGroup = new THREE.Group();
+      portalsGroup = new THREE.Group();
+      clouds3dGroup = new THREE.Group();
+      petals3dGroup = new THREE.Group();
+
+      scene3d.add(builtInTownGroup);
+      scene3d.add(customWorldGroup);
+      scene3d.add(portalsGroup);
+      scene3d.add(clouds3dGroup);
+      scene3d.add(petals3dGroup);
+
+      buildProcedural3DSanctuary();
+      build3DChibiGabrielle();
+      setup3DEventListeners();
+    }
+
+    function buildProcedural3DSanctuary() {
+      // 1. Shimmering Surrounding Crystal Lake / River Base
+      const waterGeo = new THREE.CylinderGeometry(42, 42, 0.6, 48);
+      const waterMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        roughness: 0.2,
+        metalness: 0.15
+      });
+      waterMesh3d = new THREE.Mesh(waterGeo, waterMat);
+      waterMesh3d.position.set(0, -0.55, 0);
+      waterMesh3d.receiveShadow = true;
+      builtInTownGroup.add(waterMesh3d);
+
+      // 2. Main Lush Emerald Sanctuary Island Terrain
+      const islandGeo = new THREE.CylinderGeometry(24.5, 26.5, 1.6, 48);
+      const islandMat = new THREE.MeshStandardMaterial({ color: 0x65a30d, roughness: 0.88 });
+      const islandMesh = new THREE.Mesh(islandGeo, islandMat);
+      islandMesh.position.set(0, -0.8, 0);
+      islandMesh.receiveShadow = true;
+      builtInTownGroup.add(islandMesh);
+      walkableMeshes.push(islandMesh);
+
+      // Soft rolling outer meadow rim mounds
+      const moundGeo = new THREE.CylinderGeometry(5.5, 7.5, 0.7, 16);
+      const moundMat = new THREE.MeshStandardMaterial({ color: 0x4d7c0f, roughness: 0.9 });
+      const moundCoords = [[-17, -14], [18, -14], [-18, 13], [18, 13], [0, -19]];
+      for (let i = 0; i < moundCoords.length; i++) {
+        const m = new THREE.Mesh(moundGeo, moundMat);
+        m.position.set(moundCoords[i][0], 0.15, moundCoords[i][1]);
+        m.receiveShadow = true;
+        builtInTownGroup.add(m);
+        walkableMeshes.push(m);
+      }
+
+      // 3. Crystal Stream Channel + 2 Arched Wooden Bridges on East Side
+      const streamGeo = new THREE.BoxGeometry(2.6, 0.08, 44);
+      const streamMat = new THREE.MeshStandardMaterial({ color: 0x7dd3fc, roughness: 0.15 });
+      const streamMesh = new THREE.Mesh(streamGeo, streamMat);
+      streamMesh.position.set(6.2, 0.02, 0);
+      builtInTownGroup.add(streamMesh);
+
+      // North & South Arched Timber Bridges
+      const bridgeZ = [-5.8, 5.8];
+      for (let b = 0; b < bridgeZ.length; b++) {
+        const brGroup = new THREE.Group();
+        const deck = new THREE.Mesh(
+          new THREE.BoxGeometry(4.2, 0.28, 2.4),
+          new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 })
+        );
+        deck.position.set(6.2, 0.22, bridgeZ[b]);
+        deck.castShadow = true;
+        deck.receiveShadow = true;
+        brGroup.add(deck);
+        walkableMeshes.push(deck);
+
+        // Bridge railings
+        const railGeo = new THREE.BoxGeometry(4.2, 0.55, 0.18);
+        const railMat = new THREE.MeshStandardMaterial({ color: 0x78350f });
+        const r1 = new THREE.Mesh(railGeo, railMat);
+        r1.position.set(6.2, 0.55, bridgeZ[b] - 1.1);
+        const r2 = new THREE.Mesh(railGeo, railMat);
+        r2.position.set(6.2, 0.55, bridgeZ[b] + 1.1);
+        brGroup.add(r1, r2);
+        builtInTownGroup.add(brGroup);
+      }
+
+      // 4. Central Cobblestone Courtyard Plaza
+      const plazaGeo = new THREE.CylinderGeometry(6.8, 7.0, 0.14, 32);
+      const plazaMat = new THREE.MeshStandardMaterial({ color: 0xd6d3d1, roughness: 0.85 });
+      const plazaMesh = new THREE.Mesh(plazaGeo, plazaMat);
+      plazaMesh.position.set(0, 0.05, 0);
+      plazaMesh.receiveShadow = true;
+      builtInTownGroup.add(plazaMesh);
+      walkableMeshes.push(plazaMesh);
+
+      // Inner Golden Compass Ring
+      const ringGeo = new THREE.RingGeometry(5.6, 6.1, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = -Math.PI / 2;
+      ringMesh.position.set(0, 0.13, 0);
+      builtInTownGroup.add(ringMesh);
+
+      // Radiating Stone Stepping Pathways to each of the 5 Buildings
+      const keys = Object.keys(BUILDINGS_3D_LAYOUT);
+      const stoneMat = new THREE.MeshStandardMaterial({ color: 0xe7e5e4, roughness: 0.9 });
+      for (let i = 0; i < keys.length; i++) {
+        const cfg = BUILDINGS_3D_LAYOUT[keys[i]];
+        const steps = 6;
+        for (let s = 1; s <= steps; s++) {
+          const t = s / (steps + 1);
+          const sx = cfg.portalX * t;
+          const sz = cfg.portalZ * t;
+          const st = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.8, 0.08, 10), stoneMat);
+          st.position.set(sx, 0.04, sz);
+          st.receiveShadow = true;
+          builtInTownGroup.add(st);
+        }
+      }
+
+      // 5. 3D SACRED TREE OF VISION (Center Plaza Landmark)
+      const treeGroup = new THREE.Group();
+      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.9 });
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.55, 5.2, 12), trunkMat);
+      trunk.position.set(0, 2.6, 0);
+      trunk.castShadow = true;
+      trunk.receiveShadow = true;
+      treeGroup.add(trunk);
+
+      // Blossom & Golden Foliage Clusters
+      const foliageColors = [0xf472b6, 0xf9a8d4, 0xfde047, 0xfbbf24, 0xf472b6];
+      const foliageOffsets = [
+        [0, 6.2, 0, 3.0],
+        [-2.0, 5.3, 1.2, 2.1],
+        [2.0, 5.4, -1.0, 2.2],
+        [-1.4, 5.6, -1.8, 2.0],
+        [1.5, 5.2, 1.8, 2.1]
+      ];
+      for (let f = 0; f < foliageOffsets.length; f++) {
+        const fo = foliageOffsets[f];
+        const leafMat = new THREE.MeshStandardMaterial({
+          color: foliageColors[f],
+          roughness: 0.65,
+          emissive: foliageColors[f],
+          emissiveIntensity: 0.12
+        });
+        const sphere = new THREE.Mesh(new THREE.DodecahedronGeometry(fo[3], 1), leafMat);
+        sphere.position.set(fo[0], fo[1], fo[2]);
+        sphere.castShadow = true;
+        treeGroup.add(sphere);
+      }
+      builtInTownGroup.add(treeGroup);
+
+      // 6. 3D PLAZA BOUNTY BOARD
+      const bbGroup = new THREE.Group();
+      bbGroup.position.set(BOUNTY_3D_POS.x, 0, BOUNTY_3D_POS.z);
+      bbGroup.rotation.y = 0.45;
+      const postMat = new THREE.MeshStandardMaterial({ color: 0x78350f });
+      const pL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 8), postMat);
+      pL.position.set(-0.8, 1.1, 0);
+      const pR = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 8), postMat);
+      pR.position.set(0.8, 1.1, 0);
+      const board = new THREE.Mesh(
+        new THREE.BoxGeometry(1.8, 1.1, 0.16),
+        new THREE.MeshStandardMaterial({ color: 0xfef3c7 })
+      );
+      board.position.set(0, 1.45, 0);
+      board.castShadow = true;
+      const roof = new THREE.Mesh(
+        new THREE.ConeGeometry(1.35, 0.55, 4),
+        new THREE.MeshStandardMaterial({ color: 0xd97706 })
+      );
+      roof.position.set(0, 2.25, 0);
+      roof.rotation.y = Math.PI / 4;
+      bbGroup.add(pL, pR, board, roof);
+      builtInTownGroup.add(bbGroup);
+
+      // 7. BUILD THE 5 SECTOR 3D HOUSES + GLOWING ENTRY PORTALS
+      for (let i = 0; i < state.buildings.length; i++) {
+        const b = state.buildings[i];
+        const cfg = BUILDINGS_3D_LAYOUT[b.id];
+        if (!cfg) continue;
+
+        const hGroup = new THREE.Group();
+        hGroup.position.set(cfg.x, 0, cfg.z);
+        hGroup.lookAt(0, 0, 0);
+
+        // Timber/Stone Foundation Plinth
+        const base = new THREE.Mesh(
+          new THREE.BoxGeometry(5.2, 0.5, 4.6),
+          new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 })
+        );
+        base.position.y = 0.25;
+        base.receiveShadow = true;
+        hGroup.add(base);
+
+        // Main Cottage / Conservatory Body
+        let bodyMesh, roofMesh;
+        if (b.id === "ai_academy") {
+          bodyMesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(2.4, 2.5, 3.2, 8),
+            new THREE.MeshStandardMaterial({ color: cfg.wallCol, roughness: 0.7 })
+          );
+          bodyMesh.position.y = 2.1;
+          roofMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(2.45, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+            new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.25, metalness: 0.3, transparent: true, opacity: 0.85 })
+          );
+          roofMesh.position.y = 3.7;
+        } else {
+          bodyMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(4.4, 3.0, 3.8),
+            new THREE.MeshStandardMaterial({ color: cfg.wallCol, roughness: 0.8 })
+          );
+          bodyMesh.position.y = 2.0;
+          roofMesh = new THREE.Mesh(
+            new THREE.ConeGeometry(3.6, 2.2, 4),
+            new THREE.MeshStandardMaterial({ color: cfg.roofCol, roughness: 0.75 })
+          );
+          roofMesh.position.y = 4.6;
+          roofMesh.rotation.y = Math.PI / 4;
+        }
+        bodyMesh.castShadow = true;
+        bodyMesh.receiveShadow = true;
+        roofMesh.castShadow = true;
+        hGroup.add(bodyMesh, roofMesh);
+
+        // Warm Glowing Arched Door & Windows on front face (+Z in local group space since lookAt(0,0,0) aligns +Z toward origin)
+        const doorMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(1.1, 1.8, 0.15),
+          new THREE.MeshStandardMaterial({ color: 0x4a2e1b })
+        );
+        doorMesh.position.set(0, 1.4, 1.92);
+        hGroup.add(doorMesh);
+
+        const winMat = new THREE.MeshStandardMaterial({
+          color: 0xfef08a,
+          emissive: 0xf59e0b,
+          emissiveIntensity: 0.85
+        });
+        const winL = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.85, 0.15), winMat);
+        winL.position.set(-1.25, 2.1, 1.92);
+        const winR = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.85, 0.15), winMat);
+        winR.position.set(1.25, 2.1, 1.92);
+        hGroup.add(winL, winR);
+
+        // Sector Warm Lantern PointLight
+        const pLight = new THREE.PointLight(cfg.color, b.power >= 30 ? 1.1 : 0.3, 12);
+        pLight.position.set(cfg.portalX, 2.6, cfg.portalZ);
+        scene3d.add(pLight);
+        buildingPointLights[b.id] = pLight;
+
+        builtInTownGroup.add(hGroup);
+
+        // Interactive 3D Entry Portal Ring on the Ground (Always kept in portalsGroup so it works on OpenArt worlds too!)
+        const pRingGeo = new THREE.RingGeometry(1.1, 1.45, 24);
+        const pRingMat = new THREE.MeshBasicMaterial({
+          color: cfg.color,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.85
+        });
+        const pRing = new THREE.Mesh(pRingGeo, pRingMat);
+        pRing.rotation.x = -Math.PI / 2;
+        pRing.position.set(cfg.portalX, 0.16, cfg.portalZ);
+        pRing.userData = { buildingId: b.id };
+        portalsGroup.add(pRing);
+        portalRings3d.push(pRing);
+
+        // Floating 3D Signboard Sprite above Portal
+        const signTex = createSignTexture3D(b.short + " (" + b.power + "%)", b.power, b.sign.color, b.power >= 100);
+        const signMat = new THREE.SpriteMaterial({ map: signTex, transparent: true });
+        const signSprite = new THREE.Sprite(signMat);
+        signSprite.position.set(cfg.portalX, 3.8, cfg.portalZ);
+        signSprite.scale.set(4.5, 1.25, 1);
+        portalsGroup.add(signSprite);
+        signSprites3d[b.id] = signSprite;
+      }
+
+      // 8. Decorative Cozy Pine / Cherry Trees around the Perimeter
+      const treeSpots = [[-7, -14], [7, -15], [-18, 0], [18, 1], [-8, 16], [8, 15]];
+      for (let t = 0; t < treeSpots.length; t++) {
+        const tg = new THREE.Group();
+        tg.position.set(treeSpots[t][0], 0, treeSpots[t][1]);
+        const tr = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.25, 0.4, 1.8, 8),
+          new THREE.MeshStandardMaterial({ color: 0x5c3a21 })
+        );
+        tr.position.y = 0.9;
+        const cr = new THREE.Mesh(
+          new THREE.DodecahedronGeometry(1.45, 1),
+          new THREE.MeshStandardMaterial({ color: t % 2 === 0 ? 0x84cc16 : 0xf9a8d4, roughness: 0.75 })
+        );
+        cr.position.y = 2.4;
+        cr.castShadow = true;
+        tg.add(tr, cr);
+        builtInTownGroup.add(tg);
+      }
+
+      // 9. Drifting 3D Stylized Ghibli Clouds
+      const cloudMat = new THREE.MeshStandardMaterial({ color: 0xfffbeb, roughness: 0.95, transparent: true, opacity: 0.85 });
+      for (let c = 0; c < 6; c++) {
+        const cg = new THREE.Group();
+        const angle = (c / 6) * Math.PI * 2;
+        cg.position.set(Math.cos(angle) * 26, 15 + (c % 3) * 2.5, Math.sin(angle) * 26);
+        const s1 = new THREE.Mesh(new THREE.SphereGeometry(2.2, 12, 12), cloudMat);
+        const s2 = new THREE.Mesh(new THREE.SphereGeometry(1.6, 12, 12), cloudMat);
+        s2.position.set(1.8, -0.3, 0.4);
+        const s3 = new THREE.Mesh(new THREE.SphereGeometry(1.5, 12, 12), cloudMat);
+        s3.position.set(-1.7, -0.4, -0.2);
+        cg.add(s1, s2, s3);
+        clouds3dGroup.add(cg);
+      }
+
+      // 10. Falling 3D Sakura Petals
+      const petalGeo = new THREE.PlaneGeometry(0.22, 0.14);
+      const petalMat = new THREE.MeshBasicMaterial({ color: 0xf9a8d4, side: THREE.DoubleSide });
+      for (let p = 0; p < 36; p++) {
+        const pm = new THREE.Mesh(petalGeo, petalMat);
+        pm.position.set(
+          (Math.random() - 0.5) * 28,
+          1 + Math.random() * 11,
+          (Math.random() - 0.5) * 28
+        );
+        pm.userData = {
+          vy: 0.02 + Math.random() * 0.02,
+          phase: Math.random() * Math.PI * 2
+        };
+        petals3dGroup.add(pm);
+      }
+    }
+
+    // ─── 3D CHIBI GABRIELLE HD-2D BILLBOARD CHARACTER RIG ─────────────────
+    function build3DChibiGabrielle() {
+      av3d.spriteCanvas = document.createElement("canvas");
+      av3d.spriteCanvas.width = 128;
+      av3d.spriteCanvas.height = 160;
+      av3d.spriteCtx = av3d.spriteCanvas.getContext("2d");
+
+      av3d.spriteTex = new THREE.CanvasTexture(av3d.spriteCanvas);
+      av3d.spriteTex.minFilter = THREE.LinearFilter;
+
+      const charGeo = new THREE.PlaneGeometry(2.5, 3.1);
+      const charMat = new THREE.MeshBasicMaterial({
+        map: av3d.spriteTex,
+        transparent: true,
+        alphaTest: 0.08,
+        side: THREE.DoubleSide
+      });
+      av3d.mesh = new THREE.Mesh(charGeo, charMat);
+      av3d.mesh.position.set(av3d.x, 1.55, av3d.z);
+      scene3d.add(av3d.mesh);
+
+      // Soft 3D Ground Contact Shadow Disc
+      const shGeo = new THREE.CircleGeometry(0.75, 20);
+      const shMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38 });
+      av3d.shadowMesh = new THREE.Mesh(shGeo, shMat);
+      av3d.shadowMesh.rotation.x = -Math.PI / 2;
+      av3d.shadowMesh.position.set(av3d.x, 0.12, av3d.z);
+      scene3d.add(av3d.shadowMesh);
+    }
+
+    function update3DChibiGabrielleTexture() {
+      if (!av3d.spriteCtx) return;
+      const sCtx = av3d.spriteCtx;
+      sCtx.clearRect(0, 0, 128, 160);
+      sCtx.save();
+      sCtx.translate(64, 142);
+      sCtx.scale(2.05, 2.05);
+      drawSpriteCharacter(sCtx, 0, 0, false);
+      sCtx.restore();
+      av3d.spriteTex.needsUpdate = true;
+    }
+
+    // ─── 3D CAMERA ORBIT, CLICK-TO-WALK & DRAG-AND-DROP LISTENERS ─────────
+    const raycaster3d = new THREE.Raycaster();
+    const mouse3d = new THREE.Vector2();
+
+    function setup3DEventListeners() {
+      if (!town3dCanvas) return;
+
+      town3dCanvas.addEventListener("mousedown", function(e) {
+        camOrbit.isDragging = true;
+        camOrbit.dragMoved = false;
+        camOrbit.downX = e.clientX;
+        camOrbit.downY = e.clientY;
+        camOrbit.lastX = e.clientX;
+        camOrbit.lastY = e.clientY;
+      });
+
+      window.addEventListener("mousemove", function(e) {
+        if (!camOrbit.isDragging) return;
+        const dx = e.clientX - camOrbit.lastX;
+        const dy = e.clientY - camOrbit.lastY;
+        if (Math.hypot(e.clientX - camOrbit.downX, e.clientY - camOrbit.downY) > 5) {
+          camOrbit.dragMoved = true;
+        }
+        camOrbit.yaw -= dx * 0.0075;
+        camOrbit.pitch = Math.max(0.18, Math.min(1.25, camOrbit.pitch + dy * 0.0065));
+        camOrbit.lastX = e.clientX;
+        camOrbit.lastY = e.clientY;
+      });
+
+      window.addEventListener("mouseup", function(e) {
+        if (!camOrbit.isDragging) return;
+        const wasClick = !camOrbit.dragMoved && e.target === town3dCanvas;
+        camOrbit.isDragging = false;
+
+        if (wasClick && state.activeScene === "town3d") {
+          const rect = town3dCanvas.getBoundingClientRect();
+          mouse3d.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse3d.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+          raycaster3d.setFromCamera(mouse3d, camera3d);
+
+          // First check if clicked directly on a 3D Portal Ring
+          const portalHits = raycaster3d.intersectObjects(portalRings3d, true);
+          if (portalHits.length > 0) {
+            const bId = portalHits[0].object.userData.buildingId;
+            if (bId) {
+              switchScene(bId);
+              return;
+            }
+          }
+
+          // Otherwise raycast against walkable 3D terrain (including imported OpenArt .glb mesh!)
+          const hits = raycaster3d.intersectObjects(walkableMeshes, true);
+          if (hits.length > 0) {
+            const pt = hits[0].point;
+            av3d.targetX = pt.x;
+            av3d.targetZ = pt.z;
+          }
+        }
+      });
+
+      town3dCanvas.addEventListener("wheel", function(e) {
+        e.preventDefault();
+        camOrbit.dist = Math.max(8, Math.min(42, camOrbit.dist + e.deltaY * 0.018));
+      }, { passive: false });
+
+      // Spacebar Jump in 3D Town
+      window.addEventListener("keydown", function(e) {
+        if (document.activeElement && ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) return;
+        if (e.code === "Space" && state.activeScene === "town3d" && !nearBountyBoard) {
+          if (av3d.isGrounded) {
+            av3d.vy = 0.22;
+            av3d.isGrounded = false;
+          }
+        }
+      });
+
+      // Drag and Drop .glb / .ply files directly onto the canvas container
+      const container = town3dCanvas.parentElement;
+      const dropOverlay = document.getElementById("drop3dOverlay");
+      if (container) {
+        container.addEventListener("dragover", function(e) {
+          e.preventDefault();
+          if (dropOverlay) dropOverlay.classList.remove("hidden");
+        });
+        container.addEventListener("dragleave", function(e) {
+          e.preventDefault();
+          if (dropOverlay) dropOverlay.classList.add("hidden");
+        });
+        container.addEventListener("drop", function(e) {
+          e.preventDefault();
+          if (dropOverlay) dropOverlay.classList.add("hidden");
+          if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            loadOpenArtFileObject(e.dataTransfer.files[0]);
+          }
+        });
+      }
+    }
+
+    // ─── 3D KINEMATIC UPDATE & RENDER LOOP ────────────────────────────────
+    const downRaycaster3d = new THREE.Raycaster();
+    const downDir3d = new THREE.Vector3(0, -1, 0);
+
+    function updateAndRenderTown3D() {
+      if (!scene3d || !renderer3d) return;
+
+      // Sync Lighting & Fog with Day/Night & Fog Toggles
+      const targetBg = state.night_mode ? 0x090d1a : 0xfde68a;
+      scene3d.background.setHex(targetBg);
+      if (state.fog_enabled) {
+        scene3d.fog.color.setHex(targetBg);
+        scene3d.fog.density = state.night_mode ? 0.018 : 0.011;
+      } else {
+        scene3d.fog.density = 0.0;
+      }
+      hemiLight3d.intensity = state.night_mode ? 0.28 : 0.88;
+      dirLight3d.intensity = state.night_mode ? 0.25 : 1.15;
+      plazaLight3d.intensity = state.night_mode ? 2.0 : 1.1;
+
+      // Camera-Relative WASD Movement in 3D
+      const av = state.avatar;
+      let moveForward = 0;
+      let moveRight = 0;
+      if (keys["w"] || keys["arrowup"]) moveForward += 1;
+      if (keys["s"] || keys["arrowdown"]) moveForward -= 1;
+      if (keys["d"] || keys["arrowright"]) moveRight += 1;
+      if (keys["a"] || keys["arrowleft"]) moveLeftOrRight = -1;
+      if (keys["a"] || keys["arrowleft"]) moveRight -= 1;
+
+      const speed3d = 0.14;
+      let vx = 0, vz = 0;
+
+      if (moveForward !== 0 || moveRight !== 0) {
+        av3d.targetX = null;
+        av3d.targetZ = null;
+        const forwardX = -Math.sin(camOrbit.yaw);
+        const forwardZ = -Math.cos(camOrbit.yaw);
+        const rightX = Math.cos(camOrbit.yaw);
+        const rightZ = -Math.sin(camOrbit.yaw);
+
+        vx = (forwardX * moveForward + rightX * moveRight);
+        vz = (forwardZ * moveForward + rightZ * moveRight);
+        const len = Math.hypot(vx, vz) || 1;
+        vx = (vx / len) * speed3d;
+        vz = (vz / len) * speed3d;
+
+        if (Math.abs(moveRight) > Math.abs(moveForward)) {
+          av.facing = moveRight > 0 ? "right" : "left";
+        } else {
+          av.facing = moveForward > 0 ? "up" : "down";
+        }
+      } else if (av3d.targetX !== null && av3d.targetZ !== null) {
+        const dx = av3d.targetX - av3d.x;
+        const dz = av3d.targetZ - av3d.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > 0.25) {
+          vx = (dx / dist) * speed3d;
+          vz = (dz / dist) * speed3d;
+          if (Math.abs(dx) > Math.abs(dz)) {
+            av.facing = dx > 0 ? "right" : "left";
+          } else {
+            av.facing = dz > 0 ? "down" : "up";
+          }
+        } else {
+          av3d.targetX = null;
+          av3d.targetZ = null;
+        }
+      }
+
+      if (vx !== 0 || vz !== 0) {
+        av3d.x = Math.max(-23, Math.min(23, av3d.x + vx));
+        av3d.z = Math.max(-23, Math.min(23, av3d.z + vz));
+        av.isMoving = true;
+        av.walkTick += 0.09;
+      } else {
+        av.isMoving = false;
+        av.idleTick += 0.02;
+      }
+
+      // Sync 2D coordinates so HUD telemetry & proximity stay synchronized
+      av.x = Math.round(250 + av3d.x * 8.5);
+      av.y = Math.round(248 + av3d.z * 8.5);
+
+      // Raycast Downward onto Walkable 3D Terrain / Imported OpenArt .GLB Mesh
+      let groundY = 0.05;
+      if (walkableMeshes.length > 0) {
+        downRaycaster3d.set(new THREE.Vector3(av3d.x, 35, av3d.z), downDir3d);
+        const hits = downRaycaster3d.intersectObjects(walkableMeshes, true);
+        if (hits.length > 0) {
+          groundY = hits[0].point.y;
+        }
+      }
+
+      // Vertical Jump & Gravity Physics
+      if (!av3d.isGrounded || av3d.y > groundY) {
+        av3d.y += av3d.vy;
+        av3d.vy -= 0.012;
+        if (av3d.y <= groundY) {
+          av3d.y = groundY;
+          av3d.vy = 0;
+          av3d.isGrounded = true;
+        }
+      } else {
+        av3d.y = groundY;
+      }
+
+      // Update 3D Chibi Gabrielle Billboard Position & Orientation
+      if (av3d.mesh) {
+        update3DChibiGabrielleTexture();
+        av3d.mesh.position.set(av3d.x, av3d.y + 1.45, av3d.z);
+        av3d.mesh.rotation.y = camOrbit.yaw;
+      }
+      if (av3d.shadowMesh) {
+        av3d.shadowMesh.position.set(av3d.x, groundY + 0.06, av3d.z);
+      }
+
+      // Check 3D Proximity to Portals & Bounty Board
+      nearBountyBoard = Math.hypot(av3d.x - BOUNTY_3D_POS.x, av3d.z - BOUNTY_3D_POS.z) < 2.8;
+      let foundB = null;
+      for (let i = 0; i < state.buildings.length; i++) {
+        const b = state.buildings[i];
+        const cfg = BUILDINGS_3D_LAYOUT[b.id];
+        if (cfg && Math.hypot(av3d.x - cfg.portalX, av3d.z - cfg.portalZ) < 3.4) {
+          foundB = b;
+          break;
+        }
+      }
+      if (foundB !== activeBuilding || nearBountyBoard) {
+        activeBuilding = foundB;
+        const titleEl = document.getElementById("activeSectorTitle");
+        const powerEl = document.getElementById("activeSectorPower");
+        const descEl = document.getElementById("activeSectorDesc");
+        const promptEl = document.getElementById("sectorPrompt");
+        if (nearBountyBoard) {
+          titleEl.textContent = "📋 THE BOUNTY BOARD (3D PLAZA)";
+          powerEl.textContent = "QUESTS ACTIVE";
+          powerEl.className = "px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30";
+          descEl.textContent = "3D Village bulletin board with parchment habit bounties. Click or press Space to inspect!";
+          promptEl.textContent = "📋 Bounty Board [Press Space]";
+        } else if (activeBuilding) {
+          titleEl.textContent = activeBuilding.name;
+          powerEl.textContent = activeBuilding.power >= 100 ? "100% RESTORED" : (activeBuilding.power >= 30 ? (activeBuilding.power + "% BLUEPRINT") : (activeBuilding.power + "% DORMANT"));
+          descEl.textContent = activeBuilding.desc;
+          promptEl.textContent = "📍 " + activeBuilding.short + " Portal [Press E]";
+        } else {
+          const tp = state.tree_power || 35;
+          titleEl.textContent = "🌍 3D SANCTUARY COURTYARD";
+          powerEl.textContent = "3D WORLD (" + tp + "%)";
+          descEl.textContent = "Walkable 3D Ghibli Sanctuary Town. Walk to any glowing portal ring & press [E] to enter its Cutaway Room!";
+          promptEl.textContent = "🌳 3D Tree of Vision Plaza";
+        }
+        updateInspector();
+      }
+      document.getElementById("legStateTag").textContent = av.isMoving ? "3D Walking" : (av3d.isGrounded ? "3D Grounded" : "Jumping!");
+
+      // Animate Portal Rings, Clouds, and Falling 3D Sakura Petals
+      for (let i = 0; i < portalRings3d.length; i++) {
+        const r = portalRings3d[i];
+        const isCurrent = activeBuilding && r.userData.buildingId === activeBuilding.id;
+        const pulse = isCurrent ? (1.15 + Math.sin(state.time * 5) * 0.12) : (1.0 + Math.sin(state.time * 2 + i) * 0.04);
+        r.scale.set(pulse, pulse, 1);
+      }
+
+      clouds3dGroup.rotation.y = state.time * 0.015;
+
+      for (let i = 0; i < petals3dGroup.children.length; i++) {
+        const pm = petals3dGroup.children[i];
+        pm.position.y -= pm.userData.vy;
+        pm.position.x += Math.sin(state.time + pm.userData.phase) * 0.015;
+        pm.rotation.x += 0.02;
+        pm.rotation.y += 0.03;
+        if (pm.position.y < 0.1) {
+          pm.position.y = 11.5;
+        }
+      }
+
+      // Smooth Third-Person Orbit Camera Following Gabrielle
+      const camX = av3d.x + Math.sin(camOrbit.yaw) * Math.cos(camOrbit.pitch) * camOrbit.dist;
+      const camY = av3d.y + Math.sin(camOrbit.pitch) * camOrbit.dist + 1.5;
+      const camZ = av3d.z + Math.cos(camOrbit.yaw) * Math.cos(camOrbit.pitch) * camOrbit.dist;
+      camera3d.position.set(camX, camY, camZ);
+      camera3d.lookAt(av3d.x, av3d.y + 1.4, av3d.z);
+
+      renderer3d.render(scene3d, camera3d);
+    }
+
+    // ─── MODAL 4: OPENART 3D WORLD IMPORTER & PRESET PROMPTS ──────────────
+    const OPENART_PRESETS = {
+      plaza: "Cozy sunlit Ghibli village courtyard at golden hour, warm cobblestone central plaza with an ancient glowing cherry blossom tree in the center, surrounded by warm timber cottages with terracotta roofs, wooden bridges over a crystal stream, lush stylized greenery, warm amber sunlight, walkable ground plane.",
+      safe_house: "Cozy 3D Ghibli treehouse loft studio and fashion atelier at golden hour, warm oak timber floors, arched window streaming honey sunlight, canopy reading bed with terracotta quilt, wooden garment rack and full-length mirror, potted trailing pothos vines, warm lived-in sanctuary.",
+      academy: "Sunlit octagonal botanical conservatory and AI study library at golden hour, warm wood and brass architecture, glowing holographic monitors on a handcrafted oak desk, floor-to-ceiling apothecary bookshelves, cyber-bonsai planter, warm cozy scholar sanctuary.",
+      tea_house: "Serene open-air Japanese timber tea house pavilion at golden hour, glowing amber paper lanterns, low wooden chabudai table with steaming oolong teapot and woven tatami cushions, bamboo shoji screens, cherry blossom branches overhanging a tranquil pond."
+    };
+
+    function openOpenArtModal() {
+      document.getElementById("openArtModal").classList.remove("hidden");
+    }
+
+    function closeOpenArtModal() {
+      document.getElementById("openArtModal").classList.add("hidden");
+    }
+
+    function setOpenArtPreset(key) {
+      const box = document.getElementById("openArtPromptBox");
+      if (box && OPENART_PRESETS[key]) {
+        box.value = OPENART_PRESETS[key];
+      }
+    }
+
+    function copyOpenArtPrompt() {
+      const box = document.getElementById("openArtPromptBox");
+      if (!box) return;
+      navigator.clipboard.writeText(box.value);
+      const btn = document.getElementById("copyOpenArtPromptBtn");
+      btn.textContent = "✓ Copied!";
+      setTimeout(() => { btn.textContent = "📋 Copy 3D World Prompt"; }, 1800);
+    }
+
+    function handleOpenArtWorldUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      loadOpenArtFileObject(file);
+    }
+
+    function loadOpenArtFileObject(file) {
+      const ext = file.name.split(".").pop().toLowerCase();
+      const url = URL.createObjectURL(file);
+      const badge = document.getElementById("openArtStatusBadge");
+      if (badge) badge.textContent = "Loading " + file.name + "...";
+
+      // Clear previous custom world
+      while (customWorldGroup.children.length > 0) {
+        customWorldGroup.remove(customWorldGroup.children[0]);
+      }
+
+      if (ext === "glb" || ext === "gltf") {
+        const loader = new THREE.GLTFLoader();
+        loader.load(url, function(gltf) {
+          const model = gltf.scene;
+          const box = new THREE.Box3().setFromObject(model);
+          const size = box.getSize(new THREE.Vector3());
+          const center = box.getCenter(new THREE.Vector3());
+
+          // Normalize scale to ~40 units across
+          const maxDim = Math.max(size.x, size.y, size.z) || 1;
+          const normScale = 38 / maxDim;
+          model.scale.setScalar(normScale);
+          model.position.set(-center.x * normScale, -box.min.y * normScale, -center.z * normScale);
+
+          model.traverse(function(child) {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+              walkableMeshes.push(child);
+            }
+          });
+
+          model.userData.baseScale = normScale;
+          customWorldGroup.add(model);
+
+          // Automatically hide built-in procedural terrain so the OpenArt 3D world shines!
+          const hideCheck = document.getElementById("hideBuiltInMeshCheck");
+          if (hideCheck) hideCheck.checked = true;
+          updateOpenArtTransform();
+
+          if (badge) badge.textContent = "✓ Loaded: " + file.name;
+          switchScene("town3d");
+          closeOpenArtModal();
+          showRoomToast("🌐", "OpenArt 3D World Loaded!", "Walking inside " + file.name + "! Use WASD/Click to explore & drag to orbit.", null, null);
+        });
+      } else if (ext === "ply") {
+        const loader = new THREE.PLYLoader();
+        loader.load(url, function(geometry) {
+          geometry.computeBoundingBox();
+          const box = geometry.boundingBox;
+          const size = new THREE.Vector3();
+          box.getSize(size);
+          const center = new THREE.Vector3();
+          box.getCenter(center);
+
+          const maxDim = Math.max(size.x, size.y, size.z) || 1;
+          const normScale = 38 / maxDim;
+
+          const mat = new THREE.PointsMaterial({
+            size: 0.14,
+            vertexColors: geometry.hasAttribute("color")
+          });
+          if (!geometry.hasAttribute("color")) {
+            mat.color = new THREE.Color(0xfde68a);
+          }
+
+          const points = new THREE.Points(geometry, mat);
+          points.scale.setScalar(normScale);
+          points.position.set(-center.x * normScale, -box.min.y * normScale, -center.z * normScale);
+          points.userData.baseScale = normScale;
+          customWorldGroup.add(points);
+
+          const hideCheck = document.getElementById("hideBuiltInMeshCheck");
+          if (hideCheck) hideCheck.checked = true;
+          updateOpenArtTransform();
+
+          if (badge) badge.textContent = "✓ Loaded PLY: " + file.name;
+          switchScene("town3d");
+          closeOpenArtModal();
+          showRoomToast("🌐", "OpenArt 3D Point Cloud Loaded!", "Exploring " + file.name + " in 3D!", null, null);
+        });
+      }
+    }
+
+    function updateOpenArtTransform() {
+      const scaleSlider = document.getElementById("openArtScaleSlider");
+      const ySlider = document.getElementById("openArtYOffsetSlider");
+      const hideBuiltIn = document.getElementById("hideBuiltInMeshCheck");
+      const showPortals = document.getElementById("show3dPortalsCheck");
+
+      const mult = scaleSlider ? parseFloat(scaleSlider.value) : 1.0;
+      const yOff = ySlider ? parseFloat(ySlider.value) : 0.0;
+
+      const sVal = document.getElementById("openArtScaleVal");
+      if (sVal) sVal.textContent = mult.toFixed(1) + "x";
+      const yVal = document.getElementById("openArtYOffsetVal");
+      if (yVal) yVal.textContent = yOff.toFixed(1);
+
+      for (let i = 0; i < customWorldGroup.children.length; i++) {
+        const obj = customWorldGroup.children[i];
+        const base = obj.userData.baseScale || 1;
+        obj.scale.setScalar(base * mult);
+        obj.position.y = yOff;
+      }
+
+      if (builtInTownGroup && hideBuiltIn) {
+        builtInTownGroup.visible = !hideBuiltIn.checked;
+      }
+      if (portalsGroup && showPortals) {
+        portalsGroup.visible = showPortals.checked;
+      }
+    }
+
+    function resetToBuiltIn3DTown() {
+      while (customWorldGroup.children.length > 0) {
+        customWorldGroup.remove(customWorldGroup.children[0]);
+      }
+      const hideCheck = document.getElementById("hideBuiltInMeshCheck");
+      if (hideCheck) hideCheck.checked = false;
+      if (builtInTownGroup) builtInTownGroup.visible = true;
+      const badge = document.getElementById("openArtStatusBadge");
+      if (badge) badge.textContent = "Built-In 3D Town Active";
+      av3d.x = 0;
+      av3d.z = 6.5;
+      av3d.y = 0.05;
+    }
+
+    // Hook chargeBuilding so 3D signboards & building lights update live!
+    const _origChargeBuilding = chargeBuilding;
+    chargeBuilding = function(id, delta) {
+      _origChargeBuilding(id, delta);
+      refresh3DSignboardsAndLights();
+    };
+
     loadSavedStickerState();
     renderStickerBinder();
+    initTown3D();
 
     function loop() {
-      update();
-      draw();
+      if (state.activeScene === "town3d") {
+        state.time += 0.0175;
+        updateAndRenderTown3D();
+        draw(); // Updates HUD portrait & Floating Enter Room button
+      } else {
+        update();
+        draw();
+      }
       requestAnimationFrame(loop);
     }
 
