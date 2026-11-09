@@ -15,6 +15,7 @@
 ---
 
 ## 🛠️ CURRENT MILESTONES
-- **Active Phase:** Lab 04 (NPC Registry) & Lab 05 (Neural API Gateway & Persistence) COMPLETE! ✅
-- **Academy Power Boost:** Neural Academy powered up to 80% (Blueprint Glow expanding across village grid).
-- **Next Technical Step:** Stage 1 FastAPI Live Server (`api.py`) & CLI habit logger (`cli.py`) to bridge real check-ins into the village.
+- **Active Phase:** Lab 04 & 05 Complete; Live GitHub Pages Production Deployment Active! ✅
+- **Public URL:** `https://gabriellehandy.github.io/cultivate-sanctuary/`
+- **Sector Calibrations:** Grounded to honest earned baselines (Neural Academy 25% Blueprint Glow, Memory Vault 25%, Safe House 20%, Tea House 10%, Dojo 10%).
+- **Next Technical Step:** Logging your first real-life habit check-in via the FastAPI Gateway / CLI to earn your next true village power boost!
