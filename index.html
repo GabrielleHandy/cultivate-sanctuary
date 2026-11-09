@@ -114,7 +114,7 @@
         <!-- Drag-and-Drop 3D World Overlay -->
         <div id="drop3dOverlay" class="hidden absolute inset-0 bg-emerald-950/90 backdrop-blur-md border-2 border-dashed border-emerald-400 flex flex-col items-center justify-center p-6 text-center z-30 pointer-events-none">
           <div class="text-3xl mb-2">🌐</div>
-          <div class="font-mono font-bold text-sm text-emerald-200">DROP OPENART 3D WORLD FILE (.GLB / .PLY)</div>
+          <div class="font-mono font-bold text-sm text-emerald-200">DROP OPENART 3D WORLD FILE (.SPZ / .GLB / .PLY)</div>
           <div class="font-mono text-xs text-emerald-300/80 mt-1">Chibi Gabrielle will automatically spawn on your 3D terrain!</div>
         </div>
 
@@ -625,7 +625,7 @@
         <div>
           <div class="font-bold text-sm text-emerald-300 flex items-center gap-2">
             <span>🌐 OPENART 3D WORLD LOADER & SPATIAL STUDIO</span>
-            <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-200 border border-emerald-500/40">THREE.JS .GLB / .PLY</span>
+            <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-200 border border-emerald-500/40">NATIVE .SPZ + .GLB + .PLY</span>
           </div>
           <div class="text-[10px] text-slate-400 mt-0.5">
             Generate navigable 3D worlds in OpenArt Worlds (World Labs Spatial AI) & drop the exported <code class="text-emerald-300">.glb</code> or <code class="text-emerald-300">.ply</code> directly into your town!
@@ -673,16 +673,19 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <div class="p-3 rounded-xl bg-slate-900/90 border border-emerald-500/40 flex flex-col gap-2">
           <div class="font-bold text-emerald-300 text-[11px] flex items-center justify-between">
-            <span>📥 2. Load Exported .GLB / .PLY World</span>
-            <span id="openArtStatusBadge" class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Built-In 3D Town Active</span>
+            <span>📥 2. Load .SPZ / .GLB / .PLY 3D World</span>
+            <span id="openArtStatusBadge" class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Modular 3D Kit Active</span>
           </div>
           <p class="text-[10px] text-slate-400 leading-relaxed">
-            In OpenArt Worlds, click <b>Download / Export</b> and choose <b>Mesh (<code class="text-amber-300">.glb</code>)</b> or <b>Splat/Point Cloud (<code class="text-amber-300">.ply</code>)</b>. Upload it below or drag & drop it onto the 3D canvas!
+            Supports OpenArt's native <code class="text-emerald-300 font-bold">.spz</code> Gaussian Splats, <code class="text-amber-300">.glb</code> meshes, and <code class="text-amber-300">.ply</code> clouds! Click below to load your exported OpenArt Sanctuary <code class="text-emerald-300">.spz</code> or upload any file:
           </p>
-          <input id="openArtFileInput" type="file" accept=".glb,.gltf,.ply" onchange="handleOpenArtWorldUpload(event)" class="text-[10px] text-slate-300 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 cursor-pointer">
+          <button onclick="loadBundledOpenArtSpz()" class="py-1.5 px-3 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold text-[11px] transition cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+            ✨ Load My Exported OpenArt Courtyard (.SPZ)
+          </button>
+          <input id="openArtFileInput" type="file" accept=".spz,.glb,.gltf,.ply" onchange="handleOpenArtWorldUpload(event)" class="text-[10px] text-slate-300 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-emerald-500/25 file:text-emerald-200 hover:file:bg-emerald-500/40 cursor-pointer">
           <div class="flex items-center gap-2 mt-auto pt-1">
-            <button onclick="resetToBuiltIn3DTown()" class="w-full py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 text-[10.5px] cursor-pointer transition">
-              ↺ Reset to Built-In 3D Sanctuary Town
+            <button onclick="resetToBuiltIn3DTown()" class="w-full py-1 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 text-[10px] cursor-pointer transition">
+              ↺ Switch to Modular 3D Kit Diorama Town
             </button>
           </div>
         </div>
@@ -712,6 +715,31 @@
             <input id="show3dPortalsCheck" type="checkbox" checked onchange="updateOpenArtTransform()" class="accent-amber-400 cursor-pointer">
             <label for="show3dPortalsCheck" class="cursor-pointer">Keep 5 Interactive Building Room Portals Active</label>
           </div>
+        </div>
+      </div>
+
+      <!-- STEP 4: CONVERT MODULAR BUILDING SHEET IMAGES INTO TRUE .GLB MESHES -->
+      <div class="p-3 rounded-xl bg-amber-950/25 border border-amber-500/30 flex flex-col gap-1.5">
+        <div class="text-[10.5px] font-bold text-amber-300 flex items-center justify-between">
+          <span>🏛️ 4. Convert Your Modular Building Reference Sheets into True .GLB Meshes:</span>
+          <span class="text-[9px] text-amber-200/80">Image-to-3D GLB Tools</span>
+        </div>
+        <p class="text-[10px] text-slate-300 leading-relaxed">
+          Your isolated building & prop sheets are already mounted in the 3D Town as high-res 2.5D/3D Diorama Modules! To convert any individual building into a full 360° <code class="text-amber-300">.glb</code> polygon mesh, drop a cropped building into any of these free Image-to-GLB converters:
+        </p>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px] pt-0.5">
+          <a href="https://huggingface.co/spaces/JeffreyXiang/TRELLIS" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-lg bg-black/50 hover:bg-amber-500/20 border border-amber-400/40 text-amber-200 font-bold text-center transition">
+            🧊 TRELLIS 3D (Free .GLB) ↗
+          </a>
+          <a href="https://huggingface.co/spaces/tencent/Hunyuan3D-2" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-lg bg-black/50 hover:bg-amber-500/20 border border-amber-400/40 text-amber-200 font-bold text-center transition">
+            ⚡ Hunyuan3D-2 (Free .GLB) ↗
+          </a>
+          <a href="https://studio.tripo3d.ai/" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-lg bg-black/50 hover:bg-amber-500/20 border border-white/15 text-slate-200 font-bold text-center transition">
+            🎨 Tripo3D Studio (.GLB) ↗
+          </a>
+          <a href="https://www.meshy.ai/" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-lg bg-black/50 hover:bg-amber-500/20 border border-white/15 text-slate-200 font-bold text-center transition">
+            🛠️ Meshy Image-to-3D ↗
+          </a>
         </div>
       </div>
     </div>
@@ -3970,15 +3998,17 @@
       lastY: 0
     };
 
-    // 3D Coordinates for the 5 Sector Buildings & Bounty Board around the Central Tree Plaza
+    // 3D Coordinates aligned to Gabby's Golden-Hour Sanctuary Courtyard & Modular Building Kit!
+    // Front-Left: Safe House Cottage | Back-Left: Neural Academy Glass Conservatory | Center-Back: Cipher Tea House
+    // Back-Right: Barangay Memory Vault Stone Arch | Front-Right: Kinetic Dojo Bamboo Pavilion | Center: Tree of Vision
     const BUILDINGS_3D_LAYOUT = {
-      safe_house:   { x: -13.5, z: -10.5, portalX: -10.2, portalZ: -7.8, color: 0x34d399, roofCol: 0xc86d51, wallCol: 0xf3e5ab },
-      ai_academy:   { x:  14.0, z: -10.5, portalX:  10.5, portalZ: -7.8, color: 0x38bdf8, roofCol: 0x0284c7, wallCol: 0xd8c3a5 },
-      tea_house:    { x: -14.0, z:  10.0, portalX: -10.5, portalZ:  7.5, color: 0xfbbf24, roofCol: 0xbc6c25, wallCol: 0xe9edc9 },
-      memory_vault: { x:  14.0, z:  10.0, portalX:  10.5, portalZ:  7.5, color: 0xa78bfa, roofCol: 0x7e22ce, wallCol: 0xe0c097 },
-      kinetic_dojo: { x:   0.0, z:  16.5, portalX:   0.0, portalZ: 12.6, color: 0xfb7185, roofCol: 0x52796f, wallCol: 0xdce2bd }
+      safe_house:   { x: -12.5, z:   7.5, portalX:  -8.8, portalZ:  5.4, color: 0x34d399, roofCol: 0x6b4c35, wallCol: 0xf3e5ab, crop: [0.02, 0.05, 0.25, 0.44] },
+      ai_academy:   { x: -12.5, z:  -7.5, portalX:  -8.8, portalZ: -5.4, color: 0x38bdf8, roofCol: 0x0284c7, wallCol: 0xd8c3a5, crop: [0.27, 0.06, 0.23, 0.43] },
+      tea_house:    { x:   0.0, z: -13.5, portalX:   0.0, portalZ: -9.5, color: 0xfbbf24, roofCol: 0x8c4a27, wallCol: 0xe9edc9, crop: [0.73, 0.06, 0.25, 0.43] },
+      memory_vault: { x:  12.5, z:  -7.5, portalX:   8.8, portalZ: -5.4, color: 0xa78bfa, roofCol: 0x6b7280, wallCol: 0x9ca3af, crop: [0.51, 0.52, 0.23, 0.43] },
+      kinetic_dojo: { x:  12.5, z:   7.5, portalX:   8.8, portalZ:  5.4, color: 0xfb7185, roofCol: 0x92400e, wallCol: 0xdce2bd, crop: [0.75, 0.52, 0.23, 0.43] }
     };
-    const BOUNTY_3D_POS = { x: -4.2, z: 3.6 };
+    const BOUNTY_3D_POS = { x: 3.8, z: 6.2 };
 
     function createSignTexture3D(titleText, powerPct, accentHex, isRestored) {
       const c = document.createElement("canvas");
@@ -4080,6 +4110,7 @@
       scene3d.add(petals3dGroup);
 
       buildProcedural3DSanctuary();
+      mountModularKitAssetsInto3DAndBinder();
       build3DChibiGabrielle();
       setup3DEventListeners();
     }
@@ -4807,6 +4838,12 @@
           closeOpenArtModal();
           showRoomToast("🌐", "OpenArt 3D World Loaded!", "Walking inside " + file.name + "! Use WASD/Click to explore & drag to orbit.", null, null);
         });
+      } else if (ext === "spz") {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          parseAndRenderSPZArrayBuffer(ev.target.result, file.name);
+        };
+        reader.readAsArrayBuffer(file);
       } else if (ext === "ply") {
         const loader = new THREE.PLYLoader();
         loader.load(url, function(geometry) {
@@ -4887,6 +4924,248 @@
       av3d.x = 0;
       av3d.z = 6.5;
       av3d.y = 0.05;
+    }
+
+    // ─── NATIVE .SPZ GAUSSIAN SPLAT DECOMPRESSOR & 3D MODULAR KIT SLICER ───
+    function extractTransparentCropCanvas(img, rx, ry, rw, rh, outW, outH) {
+      const c = document.createElement("canvas");
+      c.width = outW;
+      c.height = outH;
+      const cx = c.getContext("2d");
+      const sx = Math.floor(rx * img.naturalWidth);
+      const sy = Math.floor(ry * img.naturalHeight);
+      const sw = Math.floor(rw * img.naturalWidth);
+      const sh = Math.floor(rh * img.naturalHeight);
+      cx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+
+      const imgData = cx.getImageData(0, 0, outW, outH);
+      const d = imgData.data;
+      // Sample studio cream background from top-left and top-right corners
+      const bgR = (d[0] + d[(outW - 1) * 4]) * 0.5;
+      const bgG = (d[1] + d[(outW - 1) * 4 + 1]) * 0.5;
+      const bgB = (d[2] + d[(outW - 1) * 4 + 2]) * 0.5;
+
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i], g = d[i + 1], b = d[i + 2];
+        const diff = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
+        if (diff < 36) {
+          d[i + 3] = 0;
+        } else if (diff < 52) {
+          d[i + 3] = Math.floor(((diff - 36) / 16) * 255);
+        }
+      }
+      cx.putImageData(imgData, 0, 0);
+      return c;
+    }
+
+    function mountModularKitAssetsInto3DAndBinder() {
+      // 1. Load High-Res 8-Building Closeup Sheet for 3D Diorama Buildings
+      const bSheet = new Image();
+      bSheet.onload = function() {
+        const keys = Object.keys(BUILDINGS_3D_LAYOUT);
+        for (let i = 0; i < keys.length; i++) {
+          const bId = keys[i];
+          const cfg = BUILDINGS_3D_LAYOUT[bId];
+          if (!cfg || !cfg.crop) continue;
+          const croppedCanvas = extractTransparentCropCanvas(
+            bSheet,
+            cfg.crop[0], cfg.crop[1], cfg.crop[2], cfg.crop[3],
+            320, 320
+          );
+          const tex = new THREE.CanvasTexture(croppedCanvas);
+          tex.needsUpdate = true;
+
+          // Mount High-Res 3D Architectural Standee right at the building position facing the courtyard!
+          const standeeMat = new THREE.MeshBasicMaterial({
+            map: tex,
+            transparent: true,
+            alphaTest: 0.08,
+            side: THREE.DoubleSide
+          });
+          const standee = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 7.2), standeeMat);
+          // Place slightly in front of procedural roof/body volume so it has both 3D shadow depth & studio illustration fidelity
+          const dirX = -cfg.x;
+          const dirZ = -cfg.z;
+          const len = Math.hypot(dirX, dirZ) || 1;
+          standee.position.set(cfg.x + (dirX / len) * 1.2, 3.3, cfg.z + (dirZ / len) * 1.2);
+          standee.lookAt(0, 3.3, 0);
+          builtInTownGroup.add(standee);
+        }
+      };
+      bSheet.src = "sanctuary_buildings_closeup_sheet.jpg";
+
+      // 2. Load Full Modular Kit Sheet for the Tree of Vision + 10 Placeable Modular Props
+      const kitSheet = new Image();
+      kitSheet.onload = function() {
+        // Extract Glowing Cherry-Blossom Tree of Vision (Top-Left of kitSheet)
+        const treeCan = extractTransparentCropCanvas(kitSheet, 0.015, 0.02, 0.225, 0.37, 360, 360);
+        const treeTex = new THREE.CanvasTexture(treeCan);
+        treeTex.needsUpdate = true;
+        const treeMat = new THREE.MeshBasicMaterial({
+          map: treeTex,
+          transparent: true,
+          alphaTest: 0.08,
+          side: THREE.DoubleSide
+        });
+        // Crossed 3D planes for full volumetric 360-degree viewing of the Tree of Vision
+        const treePlane1 = new THREE.Mesh(new THREE.PlaneGeometry(8.5, 8.5), treeMat);
+        treePlane1.position.set(0, 4.1, 0);
+        const treePlane2 = new THREE.Mesh(new THREE.PlaneGeometry(8.5, 8.5), treeMat);
+        treePlane2.position.set(0, 4.1, 0);
+        treePlane2.rotation.y = Math.PI / 2;
+        builtInTownGroup.add(treePlane1, treePlane2);
+
+        // Extract 10 Modular Town Props & Add to Sticker/Prop Binder!
+        const modularProps = [
+          { id: "kit_stone_wall",    name: "Mossy Stone Wall",    cat: "clutter", crop: [0.50, 0.42, 0.14, 0.11] },
+          { id: "kit_stone_arch",    name: "Mossy Stone Arch",    cat: "clutter", crop: [0.67, 0.42, 0.08, 0.11] },
+          { id: "kit_string_lights", name: "String Lanterns",     cat: "tea_house", crop: [0.23, 0.56, 0.09, 0.14] },
+          { id: "kit_wood_crate",    name: "Supply Crate",        cat: "safe_house", crop: [0.65, 0.56, 0.08, 0.13] },
+          { id: "kit_treasure_box",  name: "Sanctuary Chest",     cat: "memory_vault", crop: [0.76, 0.58, 0.08, 0.11] },
+          { id: "kit_fountain",      name: "Mossy Fountain",      cat: "clutter", crop: [0.81, 0.71, 0.06, 0.12] },
+          { id: "kit_mosaic_orb",    name: "Mosaic Glow Orb",     cat: "ai_academy", crop: [0.73, 0.72, 0.06, 0.11] },
+          { id: "kit_garden_shrub",  name: "Lush Garden Shrub",   cat: "clutter", crop: [0.50, 0.56, 0.11, 0.13] },
+          { id: "kit_bamboo_stalks", name: "Bamboo Cluster",      cat: "kinetic_dojo", crop: [0.14, 0.56, 0.06, 0.14] },
+          { id: "kit_winding_path",  name: "Cobblestone Path",    cat: "clutter", crop: [0.30, 0.39, 0.18, 0.17] }
+        ];
+
+        for (let p = 0; p < modularProps.length; p++) {
+          const mp = modularProps[p];
+          if (STICKER_CATALOG.some(s => s.id === mp.id)) continue;
+          const pCan = extractTransparentCropCanvas(kitSheet, mp.crop[0], mp.crop[1], mp.crop[2], mp.crop[3], 128, 128);
+          const dataUrl = pCan.toDataURL("image/png");
+          const pImg = new Image();
+          pImg.src = dataUrl;
+          customImageCache[mp.id] = pImg;
+          STICKER_CATALOG.push({
+            id: mp.id,
+            name: mp.name,
+            cat: mp.cat,
+            layer: 1,
+            w: 64,
+            h: 64,
+            isCustom: true,
+            imageDataUrl: dataUrl
+          });
+        }
+        renderStickerBinder();
+      };
+      kitSheet.src = "sanctuary_modular_kit_sheet.jpg";
+    }
+
+    // Native .SPZ (Niantic / World Labs Gzipped Gaussian Splat v2) Parser & 3D Renderer
+    async function parseAndRenderSPZArrayBuffer(arrayBuffer, labelName) {
+      const badge = document.getElementById("openArtStatusBadge");
+      try {
+        if (badge) badge.textContent = "Decompressing " + labelName + "...";
+        const ds = new DecompressionStream("gzip");
+        const writer = ds.writable.getWriter();
+        writer.write(new Uint8Array(arrayBuffer));
+        writer.close();
+        const decompressedBuf = await new Response(ds.readable).arrayBuffer();
+        const bytes = new Uint8Array(decompressedBuf);
+        const view = new DataView(decompressedBuf);
+
+        const magic = view.getUint32(0, true);
+        if (magic !== 0x5053474e) {
+          throw new Error("Invalid SPZ magic header");
+        }
+        const version = view.getUint32(4, true);
+        const numPoints = view.getUint32(8, true);
+        const shDeg = bytes[12];
+        const fracBits = bytes[13];
+        const scaleDiv = Math.pow(2, fracBits);
+
+        const posOffset = 16;
+        const alphaOffset = 16 + numPoints * 9;
+        const colorOffset = alphaOffset + numPoints;
+
+        // Subsample if > 400,000 points so WebGL maintains 60 FPS
+        const stride = numPoints > 450000 ? Math.ceil(numPoints / 350000) : 1;
+        const estCount = Math.ceil(numPoints / stride);
+        const positions = new Float32Array(estCount * 3);
+        const colors = new Float32Array(estCount * 3);
+
+        const C0 = 0.28209479177387814;
+        const worldScale = 4.2; // Maps SPZ meters to Sanctuary 3D Town units
+        let outIdx = 0;
+
+        for (let i = 0; i < numPoints; i += stride) {
+          const alpha = bytes[alphaOffset + i];
+          if (alpha < 40) continue;
+
+          const p = posOffset + i * 9;
+          let xr = bytes[p] | (bytes[p + 1] << 8) | (bytes[p + 2] << 16);
+          if (xr & 0x800000) xr -= 0x1000000;
+          let yr = bytes[p + 3] | (bytes[p + 4] << 8) | (bytes[p + 5] << 16);
+          if (yr & 0x800000) yr -= 0x1000000;
+          let zr = bytes[p + 6] | (bytes[p + 7] << 8) | (bytes[p + 8] << 16);
+          if (zr & 0x800000) zr -= 0x1000000;
+
+          const rawX = xr / scaleDiv;
+          const rawY = yr / scaleDiv;
+          const rawZ = zr / scaleDiv;
+
+          // Filter extreme distant sky outliers so the courtyard is crisp
+          if (Math.abs(rawX) > 28 || rawY < -24 || rawY > 1.3 || rawZ < -18 || rawZ > 26) continue;
+
+          // Convert RDF (+Y down, +Z forward) to Three.js (+Y up, centered on Tree of Vision)
+          positions[outIdx * 3]     = rawX * worldScale;
+          positions[outIdx * 3 + 1] = (0.72 - rawY) * worldScale;
+          positions[outIdx * 3 + 2] = (2.6 - rawZ) * worldScale;
+
+          const c = colorOffset + i * 3;
+          colors[outIdx * 3]     = Math.min(1, Math.max(0, 0.5 + C0 * ((bytes[c] / 255.0 - 0.5) / 0.15)));
+          colors[outIdx * 3 + 1] = Math.min(1, Math.max(0, 0.5 + C0 * ((bytes[c + 1] / 255.0 - 0.5) / 0.15)));
+          colors[outIdx * 3 + 2] = Math.min(1, Math.max(0, 0.5 + C0 * ((bytes[c + 2] / 255.0 - 0.5) / 0.15)));
+          outIdx++;
+        }
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.BufferAttribute(positions.subarray(0, outIdx * 3), 3));
+        geo.setAttribute("color", new THREE.BufferAttribute(colors.subarray(0, outIdx * 3), 3));
+
+        const mat = new THREE.PointsMaterial({
+          size: 0.22,
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.95
+        });
+
+        while (customWorldGroup.children.length > 0) {
+          customWorldGroup.remove(customWorldGroup.children[0]);
+        }
+
+        const cloud = new THREE.Points(geo, mat);
+        cloud.userData.baseScale = 1.0;
+        customWorldGroup.add(cloud);
+
+        const hideCheck = document.getElementById("hideBuiltInMeshCheck");
+        if (hideCheck) hideCheck.checked = true;
+        updateOpenArtTransform();
+
+        if (badge) badge.textContent = "✓ SPZ Active (" + outIdx.toLocaleString() + " splats)";
+        switchScene("town3d");
+        closeOpenArtModal();
+        showRoomToast("🌐", "OpenArt .SPZ 3D World Loaded!", "Rendered " + outIdx.toLocaleString() + " Gaussian splats from " + labelName + "! Walk around & explore.", null, null);
+      } catch (err) {
+        console.error("SPZ Load Error:", err);
+        if (badge) badge.textContent = "⚠️ SPZ Load Error";
+      }
+    }
+
+    async function loadBundledOpenArtSpz() {
+      const badge = document.getElementById("openArtStatusBadge");
+      if (badge) badge.textContent = "Fetching Courtyard .SPZ...";
+      try {
+        const resp = await fetch("openart_sanctuary_courtyard.spz");
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        const buf = await resp.arrayBuffer();
+        await parseAndRenderSPZArrayBuffer(buf, "openart_sanctuary_courtyard.spz");
+      } catch (e) {
+        console.warn("Could not fetch bundled SPZ:", e);
+        if (badge) badge.textContent = "Select .spz file below";
+      }
     }
 
     // Hook chargeBuilding so 3D signboards & building lights update live!
