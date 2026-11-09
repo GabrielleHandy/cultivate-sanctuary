@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>Cultivate // Sanctuary — Living State Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,400&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -111,6 +114,41 @@
       <div class="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_35px_rgba(0,0,0,0.85)] bg-slate-950">
         <canvas id="town3dCanvas" width="500" height="494" class="block cursor-grab active:cursor-grabbing"></canvas>
         <canvas id="villageCanvas" width="500" height="494" class="hidden cursor-crosshair"></canvas>
+        <!-- Storybook Village Top-Right 3D View Controls & Discovery Counter -->
+        <div id="storybook3dHud" class="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10">
+          <span id="placesFoundBadge" class="px-2.5 py-1 rounded-full bg-amber-950/85 text-amber-200 border border-amber-300/40 font-mono text-[10px] backdrop-blur-md shadow">
+            ✨ <span id="placesFoundCount">0</span> / 5 Places Found
+          </span>
+          <button id="cameraModeToggleBtn" onclick="toggle3DCameraPerspective()" class="px-2.5 py-1 rounded-lg bg-amber-950/85 hover:bg-amber-900/90 text-amber-100 border border-amber-300/45 font-mono text-[10px] font-bold backdrop-blur-md shadow cursor-pointer transition">
+            🚶‍♀️ View: Third Person
+          </button>
+          <button onclick="resetAvatarToPlaza()" title="Return to Plaza" class="px-2 py-1 rounded-lg bg-black/75 hover:bg-black/90 text-amber-200 border border-white/15 font-mono text-[10px] backdrop-blur-md shadow cursor-pointer transition">
+            ↺ Plaza
+          </button>
+        </div>
+
+        <!-- Storybook Parchment Location Card Modal (Inside 3D Canvas) -->
+        <div id="storybookCardModal" class="hidden absolute inset-0 bg-black/45 backdrop-blur-[2px] flex items-center justify-center p-4 z-30">
+          <div class="relative w-full max-w-[410px] p-6 rounded-sm border border-[#f6e3c5] bg-[#f4ead7] text-[#4d3b29] shadow-[0_24px_80px_rgba(43,32,20,0.55)]">
+            <div class="absolute inset-1.5 border border-[#a17c4f]/25 pointer-events-none"></div>
+            <button onclick="closeStorybookCard()" class="absolute top-3.5 right-3.5 w-7 h-7 border border-[#7e5e3c]/30 text-[#765c41] hover:bg-[#a17c4f]/15 flex items-center justify-center cursor-pointer text-xs">✕</button>
+            <div id="sbCardEyebrow" class="font-mono text-[9.5px] tracking-[0.18em] text-[#98754d] uppercase">MAKER’S COTTAGE</div>
+            <h2 id="sbCardTitle" style="font-family: 'Fraunces', Georgia, serif;" class="text-2xl font-semibold text-[#4c3929] mt-2 mb-3 tracking-tight">The Little Atelier</h2>
+            <div class="w-10 h-0.5 bg-[#bd8b53] mb-3.5"></div>
+            <p id="sbCardDesc" style="font-family: 'Fraunces', Georgia, serif;" class="text-[14.5px] leading-relaxed text-[#745b42] mb-5">
+              A brush is still wet by the window. Someone here paints the village exactly as it looks at dusk.
+            </p>
+            <div class="flex items-center justify-between gap-2 pt-3 border-t border-[#82623c]/20 font-mono text-[10px]">
+              <button onclick="enterRoomFromStorybookCard()" class="px-3.5 py-2 bg-[#89684a] hover:bg-[#73543a] text-[#fff1d9] border border-[#a17b53] font-bold cursor-pointer transition shadow">
+                🏠 Enter Cutaway Room & Stickers ↗
+              </button>
+              <button onclick="closeStorybookCard()" class="px-3 py-2 bg-transparent hover:bg-[#a17c4f]/15 text-[#745b42] border border-[#a17c4f]/35 cursor-pointer transition">
+                Back to wandering
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Drag-and-Drop 3D World Overlay -->
         <div id="drop3dOverlay" class="hidden absolute inset-0 bg-emerald-950/90 backdrop-blur-md border-2 border-dashed border-emerald-400 flex flex-col items-center justify-center p-6 text-center z-30 pointer-events-none">
           <div class="text-3xl mb-2">🌐</div>
@@ -3377,12 +3415,16 @@
       const c3d = document.getElementById("town3dCanvas");
       const c2d = document.getElementById("villageCanvas");
       const hint = document.getElementById("canvasControlHint");
+      const sbHud = document.getElementById("storybook3dHud");
       if (sceneId === "town3d") {
         if (c3d) c3d.classList.remove("hidden");
+        if (sbHud) sbHud.classList.remove("hidden");
         if (c2d) c2d.classList.add("hidden");
         if (hint) hint.textContent = "🎮 WASD/Click Walk • Drag Orbit 360° • Scroll Zoom • [E] Enter Room";
       } else {
         if (c3d) c3d.classList.add("hidden");
+        if (sbHud) sbHud.classList.add("hidden");
+        closeStorybookCard();
         if (c2d) c2d.classList.remove("hidden");
         if (hint && !state.stickerMode) {
           hint.textContent = sceneId === "overworld"
@@ -3959,28 +4001,34 @@
     }
 
     // =========================================================================
-    // 🌍 THREE.JS 3D WALKABLE SANCTUARY TOWN + OPENART .GLB / .PLY WORLD ENGINE
+    // 🌍 THREE.JS 3D STORYBOOK LANTERN VILLAGE + OPENART .SPZ / .GLB ENGINE
     // =========================================================================
     const town3dCanvas = document.getElementById("town3dCanvas");
     let scene3d, camera3d, renderer3d;
     let builtInTownGroup, customWorldGroup, portalsGroup, clouds3dGroup, petals3dGroup;
     let walkableMeshes = [];
     let portalRings3d = [];
+    let fireflies3d = [];
+    let canopyClusters3d = [];
     let buildingPointLights = {};
     let signSprites3d = {};
-    let hemiLight3d, dirLight3d, plazaLight3d, waterMesh3d;
+    let hemiLight3d, dirLight3d, plazaLight3d, petalLight3d;
+    let thirdPerson3D = true;
+    let visitedPlaces3D = [];
+    let currentCardBuildingId = null;
 
     // 3D Avatar & Orbit Camera State
     const av3d = {
       x: 0,
       y: 0,
-      z: 6.5,
+      z: 18.0,
       vy: 0,
       isGrounded: true,
       targetX: null,
       targetZ: null,
       mesh: null,
       shadowMesh: null,
+      storybookDoll: null,
       spriteCanvas: null,
       spriteCtx: null,
       spriteTex: null
@@ -3988,8 +4036,8 @@
 
     const camOrbit = {
       yaw: 0.0,
-      pitch: 0.52,
-      dist: 22.0,
+      pitch: 0.28,
+      dist: 9.5,
       isDragging: false,
       dragMoved: false,
       downX: 0,
@@ -3998,42 +4046,306 @@
       lastY: 0
     };
 
-    // 3D Coordinates aligned to Gabby's Golden-Hour Sanctuary Courtyard & Modular Building Kit!
-    // Front-Left: Safe House Cottage | Back-Left: Neural Academy Glass Conservatory | Center-Back: Cipher Tea House
-    // Back-Right: Barangay Memory Vault Stone Arch | Front-Right: Kinetic Dojo Bamboo Pavilion | Center: Tree of Vision
+    // Storybook Lantern Village Landmarks mapped 1-to-1 with the 5 Cultivate // Sanctuary Sectors
     const BUILDINGS_3D_LAYOUT = {
-      safe_house:   { x: -12.5, z:   7.5, portalX:  -8.8, portalZ:  5.4, color: 0x34d399, roofCol: 0x6b4c35, wallCol: 0xf3e5ab, crop: [0.02, 0.05, 0.25, 0.44] },
-      ai_academy:   { x: -12.5, z:  -7.5, portalX:  -8.8, portalZ: -5.4, color: 0x38bdf8, roofCol: 0x0284c7, wallCol: 0xd8c3a5, crop: [0.27, 0.06, 0.23, 0.43] },
-      tea_house:    { x:   0.0, z: -13.5, portalX:   0.0, portalZ: -9.5, color: 0xfbbf24, roofCol: 0x8c4a27, wallCol: 0xe9edc9, crop: [0.73, 0.06, 0.25, 0.43] },
-      memory_vault: { x:  12.5, z:  -7.5, portalX:   8.8, portalZ: -5.4, color: 0xa78bfa, roofCol: 0x6b7280, wallCol: 0x9ca3af, crop: [0.51, 0.52, 0.23, 0.43] },
-      kinetic_dojo: { x:  12.5, z:   7.5, portalX:   8.8, portalZ:  5.4, color: 0xfb7185, roofCol: 0x92400e, wallCol: 0xdce2bd, crop: [0.75, 0.52, 0.23, 0.43] }
+      safe_house: {
+        id: "safe_house",
+        landmarkId: "atelier",
+        storybookName: "The Little Atelier",
+        storybookKind: "MAKER’S COTTAGE • SAFE HOUSE",
+        storybookDesc: "A brush is still wet by the window. Someone here paints the village exactly as it looks at dusk.",
+        x: -13.0, z: -10.0,
+        portalX: -9.6, portalZ: -7.4,
+        color: 0x34d399
+      },
+      ai_academy: {
+        id: "ai_academy",
+        landmarkId: "conservatory",
+        storybookName: "Glassroot Library",
+        storybookKind: "CONSERVATORY LIBRARY • NEURAL ACADEMY",
+        storybookDesc: "Fern fronds press against the glass, and old stories and AI schemas sleep between the seed jars.",
+        x: 0.0, z: -19.0,
+        portalX: 0.0, portalZ: -14.2,
+        color: 0x38bdf8
+      },
+      tea_house: {
+        id: "tea_house",
+        landmarkId: "teahouse",
+        storybookName: "Stillwater Tea House",
+        storybookKind: "TEA HOUSE • CIPHER PAVILION",
+        storybookDesc: "A kettle murmurs behind the paper screens. The last cup of warm Oolong is always waiting for a friend.",
+        x: 14.0, z: -10.0,
+        portalX: 10.4, portalZ: -7.4,
+        color: 0xfbbf24
+      },
+      memory_vault: {
+        id: "memory_vault",
+        landmarkId: "archive",
+        storybookName: "The Mossbound Archive",
+        storybookKind: "STONE ARCHIVE • MEMORY VAULT",
+        storybookDesc: "Names, weather, and small forgotten promises are kept safe beneath this green old roof.",
+        x: 19.0, z: 8.0,
+        portalX: 14.4, portalZ: 6.1,
+        color: 0xa78bfa
+      },
+      kinetic_dojo: {
+        id: "kinetic_dojo",
+        landmarkId: "pavilion",
+        storybookName: "Bamboo Practice Hall",
+        storybookKind: "TRAINING PAVILION • KINETIC DOJO",
+        storybookDesc: "The bamboo bows in the breeze. Here, even practice begins with taking a quiet breath.",
+        x: -17.0, z: 9.0,
+        portalX: -12.8, portalZ: 6.8,
+        color: 0xfb7185
+      }
     };
-    const BOUNTY_3D_POS = { x: 3.8, z: 6.2 };
+    const BOUNTY_3D_POS = { x: -4.8, z: 5.5 };
 
-    function createSignTexture3D(titleText, powerPct, accentHex, isRestored) {
+    // Storybook Geometry Helpers (from Storybook-Village-Plaza / Lantern Village)
+    function sbMat(color, roughness, extra) {
+      return new THREE.MeshStandardMaterial(Object.assign({
+        color: color,
+        roughness: roughness !== undefined ? roughness : 0.88
+      }, extra || {}));
+    }
+
+    function sbBox(parent, name, pos, size, mat) {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(size[0], size[1], size[2]), mat);
+      mesh.name = name;
+      mesh.position.set(pos[0], pos[1], pos[2]);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      parent.add(mesh);
+      return mesh;
+    }
+
+    function sbCylinder(parent, pos, rTop, rBottom, height, mat, radial) {
+      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBottom, height, radial || 8), mat);
+      mesh.position.set(pos[0], pos[1], pos[2]);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      parent.add(mesh);
+      return mesh;
+    }
+
+    function sbRoof(parent, x, y, z, width, depth, height, mat) {
+      const v = new Float32Array([
+        -width / 2, 0, -depth / 2,  0, height, -depth / 2,  width / 2, 0, -depth / 2,
+         width / 2, 0, -depth / 2,  0, height, -depth / 2,  0, height,  depth / 2,
+         width / 2, 0, -depth / 2,  0, height,  depth / 2,  width / 2, 0,  depth / 2,
+        -width / 2, 0, -depth / 2,  width / 2, 0, -depth / 2, 0, height, -depth / 2,
+        -width / 2, 0,  depth / 2,  0, height,  depth / 2,  width / 2, 0,  depth / 2,
+        -width / 2, 0, -depth / 2,  0, height, -depth / 2, -width / 2, 0,  depth / 2,
+        -width / 2, 0,  depth / 2,  0, height, -depth / 2,  0, height,  depth / 2
+      ]);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(v, 3));
+      geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, y, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      parent.add(mesh);
+      return mesh;
+    }
+
+    function sbWindow(parent, x, y, z, width, height, frameMat, glowMat, crossbars) {
+      sbBox(parent, "window light", [x, y, z], [width, height, 0.13], glowMat);
+      sbBox(parent, "window frame L", [x - width / 2 - 0.06, y, z - 0.04], [0.12, height + 0.2, 0.2], frameMat);
+      sbBox(parent, "window frame R", [x + width / 2 + 0.06, y, z - 0.04], [0.12, height + 0.2, 0.2], frameMat);
+      sbBox(parent, "window sill", [x, y - height / 2 - 0.06, z - 0.07], [width + 0.28, 0.13, 0.28], frameMat);
+      sbBox(parent, "window header", [x, y + height / 2 + 0.06, z - 0.05], [width + 0.22, 0.12, 0.2], frameMat);
+      if (crossbars !== false) {
+        sbBox(parent, "window mullion V", [x, y, z - 0.09], [0.07, height, 0.08], frameMat);
+        sbBox(parent, "window mullion H", [x, y, z - 0.09], [width, 0.07, 0.08], frameMat);
+      }
+    }
+
+    function createStorybookHouse3D(parentGroup, cfg, bObj) {
+      const g = new THREE.Group();
+      g.position.set(cfg.x, 0, cfg.z);
+      g.rotation.y = Math.atan2(cfg.x, cfg.z);
+      parentGroup.add(g);
+
+      const kind = cfg.landmarkId;
+      const stone = sbMat("#aa9371");
+      const plaster = sbMat(kind === "archive" ? "#667052" : "#d6b98a");
+      const wood = sbMat("#70442f");
+      const darkWood = sbMat("#4e3729");
+      const roofMat = sbMat(kind === "archive" ? "#63724e" : (kind === "pavilion" ? "#85684c" : "#815044"));
+      const amber = sbMat("#ffd580", 0.35, { emissive: "#bc6427", emissiveIntensity: 0.65 });
+
+      const width = kind === "archive" ? 7.8 : 7.0;
+      const depth = kind === "archive" ? 5.8 : 5.2;
+      const base = sbBox(g, "stone footing", [0, 0.35, 0], [width + 0.5, 0.58, depth + 0.4], stone);
+
+      if (kind === "conservatory") {
+        // Glassroot Library / The Neural Academy
+        sbBox(g, "library stone plinth", [0, 1.35, 0], [7.1, 1.8, 5.4], plaster);
+        sbBox(g, "dark book wall", [0, 1.65, -2.76], [6.55, 1.05, 0.12], darkWood);
+        const shelfXs = [-2.4, -0.8, 0.8, 2.4];
+        const bookColors = ["#b66e4d", "#75835c", "#d4b271", "#826b86"];
+        for (let sx = 0; sx < shelfXs.length; sx++) {
+          const x = shelfXs[sx];
+          sbBox(g, "book shelf", [x, 1.64, -2.85], [0.09, 0.95, 0.08], wood);
+          for (let i = 0; i < 4; i++) {
+            sbBox(g, "book", [x + (i - 1.5) * 0.29, 1.6, -2.91], [0.2, 0.52 + ((i % 2) * 0.12), 0.12], sbMat(bookColors[i]));
+          }
+        }
+        const postXs = [-3, -1.5, 0, 1.5, 3];
+        for (let px = 0; px < postXs.length; px++) {
+          sbCylinder(g, [postXs[px], 2.1, 0], 0.09, 0.11, 3.2, wood, 6);
+        }
+        sbBox(g, "glass roof inset", [0, 3.12, 0], [6.7, 0.1, 4.9], sbMat("#a8b69a", 0.18, { transparent: true, opacity: 0.64, metalness: 0.08 }));
+        const ribXs = [-3.4, -1.7, 0, 1.7, 3.4];
+        for (let rx = 0; rx < ribXs.length; rx++) {
+          const beam = sbBox(g, "glass roof rib", [ribXs[rx], 3.2, 0], [0.12, 0.13, 5.25], wood);
+          beam.rotation.x = -0.16;
+        }
+        const crossZs = [-2.2, -1.1, 0, 1.1, 2.2];
+        for (let cz = 0; cz < crossZs.length; cz++) {
+          sbBox(g, "glass roof crosspiece", [0, 3.12, crossZs[cz]], [7, 0.12, 0.1], wood);
+        }
+        sbBox(g, "greenhouse sign", [0, 2.65, -2.86], [2.2, 0.4, 0.13], darkWood);
+        sbWindow(g, -2.1, 1.35, -2.75, 0.62, 0.9, wood, amber, false);
+        sbWindow(g,  2.1, 1.35, -2.75, 0.62, 0.9, wood, amber, false);
+      } else if (kind === "teahouse") {
+        // Stillwater Tea House / Cipher Tea House
+        sbBox(g, "tea house walls", [0, 1.48, 0], [7, 2, 5.1], plaster);
+        sbBox(g, "screen door", [0, 1.35, -2.61], [1.5, 1.7, 0.15], sbMat("#d5c19c"));
+        for (let i = 0; i < 7; i++) {
+          sbBox(g, "paper screen slat", [-0.62 + i * 0.2, 1.35, -2.71], [0.045, 1.55, 0.06], wood);
+        }
+        const vXs = [-2.55, 2.55];
+        for (let vx = 0; vx < vXs.length; vx++) {
+          sbBox(g, "tea veranda post", [vXs[vx], 1.45, -2.8], [0.2, 2.5, 0.2], wood);
+          sbCylinder(g, [vXs[vx], 2.95, -2.9], 0.18, 0.22, 0.18, sbMat("#bd7954"), 8);
+        }
+        sbRoof(g, 0, 2.48, 0, 8.4, 6.5, 1.45, roofMat);
+        const roofTrim = sbBox(g, "sweeping roof eave", [0, 2.52, -3.15], [8.5, 0.2, 0.22], darkWood);
+        roofTrim.rotation.z = -0.04;
+        const lXs = [-2.2, 2.2];
+        for (let lx = 0; lx < lXs.length; lx++) {
+          const x = lXs[lx];
+          sbBox(g, "lantern cap", [x, 2.75, -3.02], [0.72, 0.12, 0.72], darkWood);
+          const lamp = sbBox(g, "paper lantern", [x, 2.28, -3.02], [0.52, 0.72, 0.52], sbMat("#f5c66d", 0.35, { emissive: "#d47d2e", emissiveIntensity: 0.9 }));
+          lamp.castShadow = false;
+          sbBox(g, "lantern base", [x, 1.88, -3.02], [0.58, 0.12, 0.58], darkWood);
+          sbCylinder(g, [x, 1.78, -3.02], 0.018, 0.018, 0.22, sbMat("#6c4a34"), 5);
+        }
+      } else if (kind === "archive") {
+        // The Mossbound Archive / Barangay Memory Vault
+        sbBox(g, "vault block", [0, 1.65, 0], [8.2, 2.6, 6.2], plaster);
+        sbBox(g, "archive inset", [0, 1.35, -3.13], [2.45, 2, 0.15], darkWood);
+        const arch = new THREE.Mesh(new THREE.TorusGeometry(1.18, 0.2, 7, 12, Math.PI), stone);
+        arch.position.set(0, 2.3, -3.15);
+        arch.rotation.z = Math.PI;
+        arch.castShadow = true;
+        g.add(arch);
+        const pilXs = [-3.1, -2.4, 2.4, 3.1];
+        for (let px = 0; px < pilXs.length; px++) {
+          const x = pilXs[px];
+          sbBox(g, "old stone", [x, 1.55, -3.17], [0.62, 2.7, 0.38], sbMat("#778064"));
+          sbBox(g, "ivy leaf", [x * 0.9, 2.65, -3.4], [0.54, 0.32, 0.12], sbMat("#687849"));
+        }
+        sbBox(g, "vault door", [0, 1.3, -3.24], [1.7, 1.85, 0.17], sbMat("#514536"));
+        const handle = sbCylinder(g, [0.58, 1.28, -3.36], 0.1, 0.1, 0.08, sbMat("#c79d55"), 10);
+        handle.rotation.x = Math.PI / 2;
+        sbRoof(g, 0, 2.95, 0, 8.8, 6.6, 0.9, roofMat);
+        for (let i = 0; i < 9; i++) {
+          const patch = new THREE.Mesh(new THREE.SphereGeometry(0.34 + (i % 3) * 0.06, 7, 5), sbMat("#79845b"));
+          patch.position.set(-3.1 + (i * 0.79), 3.12 + (i % 2) * 0.08, -1.8 + ((i * 7) % 4));
+          patch.scale.set(1.2, 0.3, 0.8);
+          patch.castShadow = true;
+          g.add(patch);
+        }
+      } else if (kind === "pavilion") {
+        // Bamboo Practice Hall / The Kinetic Dojo
+        sbBox(g, "hall stone deck", [0, 0.75, 0], [7.7, 0.32, 5.8], stone);
+        const colXs = [-3.1, -1.55, 0, 1.55, 3.1];
+        const colZs = [-2.1, 2.1];
+        for (let cx = 0; cx < colXs.length; cx++) {
+          for (let cz = 0; cz < colZs.length; cz++) {
+            sbCylinder(g, [colXs[cx], 1.9, colZs[cz]], 0.12, 0.15, 2.3, sbMat("#9a6840"), 7);
+            const joint = sbCylinder(g, [colXs[cx], 2.98, colZs[cz]], 0.17, 0.18, 0.14, sbMat("#d1ad68"), 7);
+            joint.rotation.z = Math.PI / 2;
+          }
+        }
+        sbRoof(g, 0, 3.02, 0, 8.4, 6.5, 1.05, roofMat);
+        for (let i = 0; i < 6; i++) {
+          const bx = -2.2 + i * 0.88;
+          const bamboo = sbCylinder(g, [bx, 1.6, 0], 0.035, 0.05, 2.1, sbMat("#8d9b59"), 6);
+          bamboo.rotation.x = (i - 2.5) * 0.02;
+          const nodeYs = [0.95, 1.65, 2.35];
+          for (let ny = 0; ny < nodeYs.length; ny++) {
+            const node = sbCylinder(g, [bx, nodeYs[ny], 0], 0.065, 0.065, 0.12, sbMat("#c5ad6d"), 6);
+            node.rotation.z = Math.PI / 2;
+          }
+        }
+        const pLanternXs = [-2.2, 2.2];
+        for (let lx = 0; lx < pLanternXs.length; lx++) {
+          const lantern = sbBox(g, "practice hall lantern", [pLanternXs[lx], 2.15, -2.2], [0.35, 0.48, 0.35], sbMat("#f4c978", 0.42, { emissive: "#bc6427", emissiveIntensity: 0.65 }));
+          lantern.castShadow = false;
+        }
+      } else {
+        // The Little Atelier / Safe House & Atelier
+        sbBox(g, "atelier walls", [0, 1.45, 0], [7, 2.2, 5.3], plaster);
+        sbBox(g, "atelier door", [0, 1.17, -2.69], [1.2, 1.8, 0.16], wood);
+        sbBox(g, "door inset", [0, 1.45, -2.79], [0.88, 0.93, 0.05], sbMat("#896044"));
+        sbWindow(g, -2.15, 1.58, -2.69, 1.0, 1.1, wood, amber, true);
+        sbWindow(g,  2.15, 1.58, -2.69, 1.0, 1.1, wood, amber, true);
+        sbRoof(g, 0, 2.55, 0, 8.1, 6.2, 1.7, roofMat);
+        const fXs = [-3.5, 3.5];
+        for (let fx = 0; fx < fXs.length; fx++) {
+          const beam = sbBox(g, "atelier roof fascia", [fXs[fx], 2.6, -1.1], [0.18, 0.2, 5.6], darkWood);
+          beam.rotation.x = -0.14;
+        }
+        const chimney = sbBox(g, "chimney", [2.3, 3.25, 0.4], [0.8, 1.35, 0.8], stone);
+        chimney.rotation.y = 0.1;
+      }
+
+      if (kind !== "conservatory" && kind !== "pavilion") {
+        sbBox(g, "location sign", [0, 3.36, -3.08], [2.5, 0.43, 0.14], darkWood);
+      }
+
+      // 5 Stone Threshold Stepping Tiles joining the house to the central cobblestone plaza
+      const pathMat = sbMat("#ad9674");
+      for (let i = 0; i < 5; i++) {
+        const stoneTile = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 1.18), pathMat);
+        stoneTile.position.set(0, 0.09, -4.4 - i * 1.48);
+        stoneTile.rotation.y = (i % 2 ? 0.04 : -0.04);
+        stoneTile.receiveShadow = true;
+        g.add(stoneTile);
+      }
+    }
+
+    function createSignTexture3D(titleText, subText, powerPct, accentHex, isRestored) {
       const c = document.createElement("canvas");
-      c.width = 256;
-      c.height = 72;
+      c.width = 280;
+      c.height = 82;
       const cx = c.getContext("2d");
 
-      cx.fillStyle = isRestored ? "rgba(254, 243, 199, 0.95)" : "rgba(15, 23, 42, 0.92)";
+      cx.fillStyle = isRestored ? "rgba(244, 234, 215, 0.96)" : "rgba(42, 34, 25, 0.90)";
       cx.strokeStyle = accentHex;
-      cx.lineWidth = 4;
+      cx.lineWidth = 3.5;
       cx.beginPath();
-      cx.roundRect(6, 6, 244, 60, 14);
+      cx.roundRect(6, 6, 268, 70, 10);
       cx.fill();
       cx.stroke();
 
-      cx.fillStyle = isRestored ? "#4a2e1b" : "#f8fafc";
-      cx.font = "bold 17px monospace";
+      cx.fillStyle = isRestored ? "#4c3929" : "#fff1d8";
+      cx.font = "bold 15px Georgia, serif";
       cx.textAlign = "center";
-      cx.fillText(titleText, 128, 30);
+      cx.fillText(titleText, 140, 27);
 
-      // Power bar
-      cx.fillStyle = "rgba(0,0,0,0.5)";
-      cx.fillRect(38, 42, 180, 10);
+      cx.fillStyle = isRestored ? "#8c765d" : "#f1cd91";
+      cx.font = "11px monospace";
+      cx.fillText(subText + " • " + powerPct + "%", 140, 45);
+
+      cx.fillStyle = "rgba(0,0,0,0.45)";
+      cx.fillRect(40, 54, 200, 8);
       cx.fillStyle = accentHex;
-      cx.fillRect(38, 42, Math.max(8, (180 * powerPct) / 100), 10);
+      cx.fillRect(40, 54, Math.max(8, (200 * powerPct) / 100), 8);
 
       const tex = new THREE.CanvasTexture(c);
       tex.needsUpdate = true;
@@ -4049,12 +4361,12 @@
         const sp = signSprites3d[b.id];
         if (sp) {
           if (sp.material.map) sp.material.map.dispose();
-          sp.material.map = createSignTexture3D(b.short + " (" + b.power + "%)", b.power, b.sign.color, b.power >= 100);
+          sp.material.map = createSignTexture3D(cfg.storybookName, b.short, b.power, b.sign.color, b.power >= 100);
           sp.material.needsUpdate = true;
         }
         const pt = buildingPointLights[b.id];
         if (pt) {
-          pt.intensity = b.power >= 30 ? (0.6 + (b.power / 100) * 1.4) : 0.2;
+          pt.intensity = b.power >= 30 ? (0.7 + (b.power / 100) * 1.4) : 0.35;
         }
       }
     }
@@ -4063,39 +4375,41 @@
       if (!town3dCanvas || typeof THREE === "undefined") return;
 
       scene3d = new THREE.Scene();
-      scene3d.background = new THREE.Color(0xfde68a);
-      scene3d.fog = new THREE.FogExp2(0xfde68a, 0.012);
+      scene3d.background = new THREE.Color("#d3a778");
+      scene3d.fog = new THREE.FogExp2("#d3a778", 0.0084);
 
-      camera3d = new THREE.PerspectiveCamera(45, town3dCanvas.width / town3dCanvas.height, 0.1, 300);
+      camera3d = new THREE.PerspectiveCamera(60, town3dCanvas.width / town3dCanvas.height, 0.1, 160);
 
-      renderer3d = new THREE.WebGLRenderer({ canvas: town3dCanvas, antialias: true });
+      renderer3d = new THREE.WebGLRenderer({ canvas: town3dCanvas, antialias: true, powerPreference: "high-performance" });
       renderer3d.setSize(town3dCanvas.width, town3dCanvas.height);
-      renderer3d.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer3d.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.8));
       renderer3d.shadowMap.enabled = true;
       renderer3d.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer3d.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer3d.toneMappingExposure = 1.12;
 
-      // Golden-Hour Hemisphere & Directional Sun Lighting
-      hemiLight3d = new THREE.HemisphereLight(0xfef3c7, 0x3f6212, 0.85);
-      hemiLight3d.position.set(0, 40, 0);
+      // Storybook Lantern Village Sunset Lighting
+      hemiLight3d = new THREE.HemisphereLight("#ffedcf", "#626b4c", 1.85);
       scene3d.add(hemiLight3d);
 
-      dirLight3d = new THREE.DirectionalLight(0xfde047, 1.15);
-      dirLight3d.position.set(24, 36, 18);
+      dirLight3d = new THREE.DirectionalLight("#ffd39a", 2.8);
+      dirLight3d.position.set(-16, 25, 13);
       dirLight3d.castShadow = true;
-      dirLight3d.shadow.mapSize.width = 1024;
-      dirLight3d.shadow.mapSize.height = 1024;
-      dirLight3d.shadow.camera.near = 1;
-      dirLight3d.shadow.camera.far = 95;
-      const d = 28;
-      dirLight3d.shadow.camera.left = -d;
-      dirLight3d.shadow.camera.right = d;
-      dirLight3d.shadow.camera.top = d;
-      dirLight3d.shadow.camera.bottom = -d;
+      dirLight3d.shadow.mapSize.set(1536, 1536);
+      dirLight3d.shadow.camera.left = -34;
+      dirLight3d.shadow.camera.right = 34;
+      dirLight3d.shadow.camera.top = 34;
+      dirLight3d.shadow.camera.bottom = -34;
+      dirLight3d.shadow.bias = -0.00022;
       scene3d.add(dirLight3d);
 
-      plazaLight3d = new THREE.PointLight(0xfbbf24, 1.3, 22);
-      plazaLight3d.position.set(0, 4.5, 0);
+      plazaLight3d = new THREE.PointLight("#ffc16f", 1.35, 18, 1.8);
+      plazaLight3d.position.set(0, 7.7, 0);
       scene3d.add(plazaLight3d);
+
+      petalLight3d = new THREE.PointLight("#ed9f9a", 0.7, 11, 2);
+      petalLight3d.position.set(-1.8, 8.5, 0.5);
+      scene3d.add(petalLight3d);
 
       builtInTownGroup = new THREE.Group();
       customWorldGroup = new THREE.Group();
@@ -4116,241 +4430,171 @@
     }
 
     function buildProcedural3DSanctuary() {
-      // 1. Shimmering Surrounding Crystal Lake / River Base
-      const waterGeo = new THREE.CylinderGeometry(42, 42, 0.6, 48);
-      const waterMat = new THREE.MeshStandardMaterial({
-        color: 0x38bdf8,
-        roughness: 0.2,
-        metalness: 0.15
-      });
-      waterMesh3d = new THREE.Mesh(waterGeo, waterMat);
-      waterMesh3d.position.set(0, -0.55, 0);
-      waterMesh3d.receiveShadow = true;
-      builtInTownGroup.add(waterMesh3d);
+      // 1. Storybook Meadow Ground & Sandstone Plaza Base
+      const ground = new THREE.Mesh(new THREE.CircleGeometry(35, 72), sbMat("#8c906d"));
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -0.18;
+      ground.receiveShadow = true;
+      builtInTownGroup.add(ground);
+      walkableMeshes.push(ground);
 
-      // 2. Main Lush Emerald Sanctuary Island Terrain
-      const islandGeo = new THREE.CylinderGeometry(24.5, 26.5, 1.6, 48);
-      const islandMat = new THREE.MeshStandardMaterial({ color: 0x65a30d, roughness: 0.88 });
-      const islandMesh = new THREE.Mesh(islandGeo, islandMat);
-      islandMesh.position.set(0, -0.8, 0);
-      islandMesh.receiveShadow = true;
-      builtInTownGroup.add(islandMesh);
-      walkableMeshes.push(islandMesh);
+      const plaza = new THREE.Mesh(new THREE.CircleGeometry(25, 80), sbMat("#c2a982"));
+      plaza.rotation.x = -Math.PI / 2;
+      plaza.position.y = -0.07;
+      plaza.receiveShadow = true;
+      builtInTownGroup.add(plaza);
+      walkableMeshes.push(plaza);
 
-      // Soft rolling outer meadow rim mounds
-      const moundGeo = new THREE.CylinderGeometry(5.5, 7.5, 0.7, 16);
-      const moundMat = new THREE.MeshStandardMaterial({ color: 0x4d7c0f, roughness: 0.9 });
-      const moundCoords = [[-17, -14], [18, -14], [-18, 13], [18, 13], [0, -19]];
-      for (let i = 0; i < moundCoords.length; i++) {
-        const m = new THREE.Mesh(moundGeo, moundMat);
-        m.position.set(moundCoords[i][0], 0.15, moundCoords[i][1]);
-        m.receiveShadow = true;
-        builtInTownGroup.add(m);
-        walkableMeshes.push(m);
-      }
-
-      // 3. Crystal Stream Channel + 2 Arched Wooden Bridges on East Side
-      const streamGeo = new THREE.BoxGeometry(2.6, 0.08, 44);
-      const streamMat = new THREE.MeshStandardMaterial({ color: 0x7dd3fc, roughness: 0.15 });
-      const streamMesh = new THREE.Mesh(streamGeo, streamMat);
-      streamMesh.position.set(6.2, 0.02, 0);
-      builtInTownGroup.add(streamMesh);
-
-      // North & South Arched Timber Bridges
-      const bridgeZ = [-5.8, 5.8];
-      for (let b = 0; b < bridgeZ.length; b++) {
-        const brGroup = new THREE.Group();
-        const deck = new THREE.Mesh(
-          new THREE.BoxGeometry(4.2, 0.28, 2.4),
-          new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 })
-        );
-        deck.position.set(6.2, 0.22, bridgeZ[b]);
-        deck.castShadow = true;
-        deck.receiveShadow = true;
-        brGroup.add(deck);
-        walkableMeshes.push(deck);
-
-        // Bridge railings
-        const railGeo = new THREE.BoxGeometry(4.2, 0.55, 0.18);
-        const railMat = new THREE.MeshStandardMaterial({ color: 0x78350f });
-        const r1 = new THREE.Mesh(railGeo, railMat);
-        r1.position.set(6.2, 0.55, bridgeZ[b] - 1.1);
-        const r2 = new THREE.Mesh(railGeo, railMat);
-        r2.position.set(6.2, 0.55, bridgeZ[b] + 1.1);
-        brGroup.add(r1, r2);
-        builtInTownGroup.add(brGroup);
-      }
-
-      // 4. Central Cobblestone Courtyard Plaza
-      const plazaGeo = new THREE.CylinderGeometry(6.8, 7.0, 0.14, 32);
-      const plazaMat = new THREE.MeshStandardMaterial({ color: 0xd6d3d1, roughness: 0.85 });
-      const plazaMesh = new THREE.Mesh(plazaGeo, plazaMat);
-      plazaMesh.position.set(0, 0.05, 0);
-      plazaMesh.receiveShadow = true;
-      builtInTownGroup.add(plazaMesh);
-      walkableMeshes.push(plazaMesh);
-
-      // Inner Golden Compass Ring
-      const ringGeo = new THREE.RingGeometry(5.6, 6.1, 32);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide });
-      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.rotation.x = -Math.PI / 2;
-      ringMesh.position.set(0, 0.13, 0);
-      builtInTownGroup.add(ringMesh);
-
-      // Radiating Stone Stepping Pathways to each of the 5 Buildings
-      const keys = Object.keys(BUILDINGS_3D_LAYOUT);
-      const stoneMat = new THREE.MeshStandardMaterial({ color: 0xe7e5e4, roughness: 0.9 });
-      for (let i = 0; i < keys.length; i++) {
-        const cfg = BUILDINGS_3D_LAYOUT[keys[i]];
-        const steps = 6;
-        for (let s = 1; s <= steps; s++) {
-          const t = s / (steps + 1);
-          const sx = cfg.portalX * t;
-          const sz = cfg.portalZ * t;
-          const st = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.8, 0.08, 10), stoneMat);
-          st.position.set(sx, 0.04, sz);
-          st.receiveShadow = true;
-          builtInTownGroup.add(st);
+      // 2. 13 Concentric Rings of Irregular Cobblestones (from Storybook-Village-Plaza)
+      const seamMat = sbMat("#a98d68");
+      const cobbleMats = [sbMat("#c9b18d"), sbMat("#c4aa83"), sbMat("#cfb995"), sbMat("#bfa580")];
+      for (let ring = 1; ring <= 13; ring++) {
+        const r = ring * 1.75;
+        const count = Math.max(10, Math.round(r * 2.8));
+        for (let i = 0; i < count; i++) {
+          const theta = (i / count) * Math.PI * 2 + (ring % 2) * 0.11;
+          const x = Math.cos(theta) * r;
+          const z = Math.sin(theta) * r;
+          const tileMat = (i % 8 === 0) ? seamMat : cobbleMats[(ring + i) % 4];
+          const tile = new THREE.Mesh(
+            new THREE.BoxGeometry(0.88 + (i % 3) * 0.15, 0.1, 0.62 + ((i + ring) % 2) * 0.22),
+            tileMat
+          );
+          tile.position.set(x, 0.02, z);
+          tile.rotation.y = theta + ((i * 17) % 11) * 0.025;
+          tile.receiveShadow = true;
+          builtInTownGroup.add(tile);
         }
       }
 
-      // 5. 3D SACRED TREE OF VISION (Center Plaza Landmark)
-      const treeGroup = new THREE.Group();
-      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.9 });
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.55, 5.2, 12), trunkMat);
-      trunk.position.set(0, 2.6, 0);
-      trunk.castShadow = true;
-      trunk.receiveShadow = true;
-      treeGroup.add(trunk);
-
-      // Blossom & Golden Foliage Clusters
-      const foliageColors = [0xf472b6, 0xf9a8d4, 0xfde047, 0xfbbf24, 0xf472b6];
-      const foliageOffsets = [
-        [0, 6.2, 0, 3.0],
-        [-2.0, 5.3, 1.2, 2.1],
-        [2.0, 5.4, -1.0, 2.2],
-        [-1.4, 5.6, -1.8, 2.0],
-        [1.5, 5.2, 1.8, 2.1]
-      ];
-      for (let f = 0; f < foliageOffsets.length; f++) {
-        const fo = foliageOffsets[f];
-        const leafMat = new THREE.MeshStandardMaterial({
-          color: foliageColors[f],
-          roughness: 0.65,
-          emissive: foliageColors[f],
-          emissiveIntensity: 0.12
-        });
-        const sphere = new THREE.Mesh(new THREE.DodecahedronGeometry(fo[3], 1), leafMat);
-        sphere.position.set(fo[0], fo[1], fo[2]);
-        sphere.castShadow = true;
-        treeGroup.add(sphere);
+      // 3. The Ancient Sacred Tree of Vision: 9 Branches + 50 Blossom & Gold Icosahedron Clusters + Golden Torus Halo
+      const trunkMat = sbMat("#755137");
+      const trunk = sbCylinder(builtInTownGroup, [0, 3.3, 0], 0.62, 0.92, 6.5, trunkMat, 9);
+      trunk.rotation.z = -0.08;
+      for (let i = 0; i < 9; i++) {
+        const angle = (i / 9) * Math.PI * 2;
+        const branch = sbCylinder(
+          builtInTownGroup,
+          [Math.cos(angle) * 1.75, 5.8 + (i % 3) * 0.4, Math.sin(angle) * 1.4],
+          0.13, 0.39, 4.4, trunkMat, 7
+        );
+        branch.rotation.z = Math.cos(angle) * 0.7;
+        branch.rotation.x = Math.sin(angle) * 0.48;
       }
-      builtInTownGroup.add(treeGroup);
 
-      // 6. 3D PLAZA BOUNTY BOARD
+      const blossomColors = ["#edbd72", "#f1cb7e", "#e9a88d", "#f1c5a5", "#df9d8c", "#f0d28d"];
+      const blossomMats = blossomColors.map((c, idx) =>
+        sbMat(c, 0.78, { emissive: c, emissiveIntensity: (idx < 2 || idx === 5) ? 0.42 : 0.30 })
+      );
+      for (let i = 0; i < 50; i++) {
+        const angle = i * 2.399;
+        const radius = 2.6 + (i % 7) * 0.38;
+        const y = 7.35 + ((i * 13) % 8) * 0.36 - Math.abs(radius - 3.7) * 0.12;
+        const canopy = new THREE.Mesh(
+          new THREE.IcosahedronGeometry(1.15 + (i % 4) * 0.13, 1),
+          blossomMats[i % blossomMats.length]
+        );
+        canopy.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius * 0.8);
+        canopy.scale.set(1.18, 0.77, 0.96);
+        canopy.castShadow = true;
+        canopy.receiveShadow = true;
+        canopy.userData.sway = Math.random() * Math.PI * 2;
+        builtInTownGroup.add(canopy);
+        canopyClusters3d.push(canopy);
+      }
+
+      const treeHalo = new THREE.Mesh(
+        new THREE.TorusGeometry(3.2, 0.055, 8, 56),
+        sbMat("#e8c47a", 0.36, { emissive: "#d5904c", emissiveIntensity: 0.45 })
+      );
+      treeHalo.rotation.x = Math.PI / 2;
+      treeHalo.position.y = 8.1;
+      builtInTownGroup.add(treeHalo);
+
+      const gardenRing = new THREE.Mesh(new THREE.TorusGeometry(4.35, 0.14, 8, 80), sbMat("#85906a"));
+      gardenRing.rotation.x = Math.PI / 2;
+      gardenRing.position.y = 0.13;
+      gardenRing.receiveShadow = true;
+      builtInTownGroup.add(gardenRing);
+
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        const petal = new THREE.Mesh(new THREE.IcosahedronGeometry(0.15, 0), blossomMats[i % blossomMats.length]);
+        petal.position.set(Math.cos(a) * 4.15, 0.16, Math.sin(a) * 4.15);
+        petal.scale.set(1.4, 0.35, 0.8);
+        builtInTownGroup.add(petal);
+      }
+
+      // 4. 24 Perimeter Olive & Blossom Trees Bounding the Village Commons
+      const edgeFoliage = ["#737e57", "#81875c", "#96905f"].map(c => sbMat(c));
+      const edgeTrunkMat = sbMat("#75563d");
+      for (let i = 0; i < 24; i++) {
+        const a = (i / 24) * Math.PI * 2;
+        const r = 29.5 + (i % 3) * 1.2;
+        const x = Math.sin(a) * r;
+        const z = Math.cos(a) * r;
+        sbCylinder(builtInTownGroup, [x, 1.2, z], 0.23, 0.36, 2.4, edgeTrunkMat, 7);
+        for (let j = 0; j < 3; j++) {
+          const crown = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(1.4 + (j % 2) * 0.28, 1),
+            edgeFoliage[(i + j) % edgeFoliage.length]
+          );
+          crown.position.set(x + (j - 1) * 0.68, 2.5 + (j % 2) * 0.55, z + ((i + j) % 2) * 0.5);
+          crown.scale.set(1.15, 0.85, 1.05);
+          crown.castShadow = true;
+          builtInTownGroup.add(crown);
+        }
+      }
+
+      // 5. 3D Plaza Bounty Board
       const bbGroup = new THREE.Group();
       bbGroup.position.set(BOUNTY_3D_POS.x, 0, BOUNTY_3D_POS.z);
       bbGroup.rotation.y = 0.45;
-      const postMat = new THREE.MeshStandardMaterial({ color: 0x78350f });
-      const pL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 8), postMat);
-      pL.position.set(-0.8, 1.1, 0);
-      const pR = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 8), postMat);
-      pR.position.set(0.8, 1.1, 0);
-      const board = new THREE.Mesh(
-        new THREE.BoxGeometry(1.8, 1.1, 0.16),
-        new THREE.MeshStandardMaterial({ color: 0xfef3c7 })
-      );
-      board.position.set(0, 1.45, 0);
-      board.castShadow = true;
-      const roof = new THREE.Mesh(
-        new THREE.ConeGeometry(1.35, 0.55, 4),
-        new THREE.MeshStandardMaterial({ color: 0xd97706 })
-      );
-      roof.position.set(0, 2.25, 0);
-      roof.rotation.y = Math.PI / 4;
-      bbGroup.add(pL, pR, board, roof);
+      const postMat = sbMat("#684a34");
+      sbCylinder(bbGroup, [-0.8, 1.1, 0], 0.11, 0.13, 2.2, postMat, 8);
+      sbCylinder(bbGroup, [ 0.8, 1.1, 0], 0.11, 0.13, 2.2, postMat, 8);
+      sbBox(bbGroup, "bounty board", [0, 1.45, 0], [1.8, 1.1, 0.16], sbMat("#f4ead7"));
+      const bbRoof = new THREE.Mesh(new THREE.ConeGeometry(1.35, 0.55, 4), sbMat("#815044"));
+      bbRoof.position.set(0, 2.25, 0);
+      bbRoof.rotation.y = Math.PI / 4;
+      bbGroup.add(bbRoof);
       builtInTownGroup.add(bbGroup);
 
-      // 7. BUILD THE 5 SECTOR 3D HOUSES + GLOWING ENTRY PORTALS
+      // 6. Build All 5 Storybook Houses + 10 Warm Path Streetlamps + Interactive Entry Portals
+      const lampMat = sbMat("#ffda94", 0.3, { emissive: "#e39948", emissiveIntensity: 1.05 });
       for (let i = 0; i < state.buildings.length; i++) {
         const b = state.buildings[i];
         const cfg = BUILDINGS_3D_LAYOUT[b.id];
         if (!cfg) continue;
 
-        const hGroup = new THREE.Group();
-        hGroup.position.set(cfg.x, 0, cfg.z);
-        hGroup.lookAt(0, 0, 0);
+        createStorybookHouse3D(builtInTownGroup, cfg, b);
 
-        // Timber/Stone Foundation Plinth
-        const base = new THREE.Mesh(
-          new THREE.BoxGeometry(5.2, 0.5, 4.6),
-          new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 })
-        );
-        base.position.y = 0.25;
-        base.receiveShadow = true;
-        hGroup.add(base);
-
-        // Main Cottage / Conservatory Body
-        let bodyMesh, roofMesh;
-        if (b.id === "ai_academy") {
-          bodyMesh = new THREE.Mesh(
-            new THREE.CylinderGeometry(2.4, 2.5, 3.2, 8),
-            new THREE.MeshStandardMaterial({ color: cfg.wallCol, roughness: 0.7 })
-          );
-          bodyMesh.position.y = 2.1;
-          roofMesh = new THREE.Mesh(
-            new THREE.SphereGeometry(2.45, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2),
-            new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.25, metalness: 0.3, transparent: true, opacity: 0.85 })
-          );
-          roofMesh.position.y = 3.7;
-        } else {
-          bodyMesh = new THREE.Mesh(
-            new THREE.BoxGeometry(4.4, 3.0, 3.8),
-            new THREE.MeshStandardMaterial({ color: cfg.wallCol, roughness: 0.8 })
-          );
-          bodyMesh.position.y = 2.0;
-          roofMesh = new THREE.Mesh(
-            new THREE.ConeGeometry(3.6, 2.2, 4),
-            new THREE.MeshStandardMaterial({ color: cfg.roofCol, roughness: 0.75 })
-          );
-          roofMesh.position.y = 4.6;
-          roofMesh.rotation.y = Math.PI / 4;
+        // Twin Warm Streetlamps flanking each building's cobblestone path
+        const angle = Math.atan2(cfg.x, cfg.z);
+        const sides = [-1, 1];
+        for (let s = 0; s < sides.length; s++) {
+          const side = sides[s];
+          const lx = cfg.x + Math.sin(angle + side * 0.45) * 5.2;
+          const lz = cfg.z + Math.cos(angle + side * 0.45) * 5.2;
+          sbCylinder(builtInTownGroup, [lx, 1.15, lz], 0.09, 0.13, 2.3, postMat, 7);
+          sbBox(builtInTownGroup, "lantern housing", [lx, 2.32, lz], [0.42, 0.52, 0.42], lampMat);
+          const roofCap = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.23, 4), postMat);
+          roofCap.position.set(lx, 2.7, lz);
+          roofCap.rotation.y = Math.PI / 4;
+          builtInTownGroup.add(roofCap);
+          const lLight = new THREE.PointLight("#ffbc69", 0.5, 7);
+          lLight.position.set(lx, 2.2, lz);
+          builtInTownGroup.add(lLight);
         }
-        bodyMesh.castShadow = true;
-        bodyMesh.receiveShadow = true;
-        roofMesh.castShadow = true;
-        hGroup.add(bodyMesh, roofMesh);
-
-        // Warm Glowing Arched Door & Windows on front face (+Z in local group space since lookAt(0,0,0) aligns +Z toward origin)
-        const doorMesh = new THREE.Mesh(
-          new THREE.BoxGeometry(1.1, 1.8, 0.15),
-          new THREE.MeshStandardMaterial({ color: 0x4a2e1b })
-        );
-        doorMesh.position.set(0, 1.4, 1.92);
-        hGroup.add(doorMesh);
-
-        const winMat = new THREE.MeshStandardMaterial({
-          color: 0xfef08a,
-          emissive: 0xf59e0b,
-          emissiveIntensity: 0.85
-        });
-        const winL = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.85, 0.15), winMat);
-        winL.position.set(-1.25, 2.1, 1.92);
-        const winR = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.85, 0.15), winMat);
-        winR.position.set(1.25, 2.1, 1.92);
-        hGroup.add(winL, winR);
 
         // Sector Warm Lantern PointLight
-        const pLight = new THREE.PointLight(cfg.color, b.power >= 30 ? 1.1 : 0.3, 12);
+        const pLight = new THREE.PointLight(cfg.color, b.power >= 30 ? 1.1 : 0.4, 12);
         pLight.position.set(cfg.portalX, 2.6, cfg.portalZ);
         scene3d.add(pLight);
         buildingPointLights[b.id] = pLight;
 
-        builtInTownGroup.add(hGroup);
-
-        // Interactive 3D Entry Portal Ring on the Ground (Always kept in portalsGroup so it works on OpenArt worlds too!)
-        const pRingGeo = new THREE.RingGeometry(1.1, 1.45, 24);
+        // Interactive 3D Entry Portal Ring on the Cobblestone Threshold
+        const pRingGeo = new THREE.RingGeometry(1.15, 1.5, 28);
         const pRingMat = new THREE.MeshBasicMaterial({
           color: cfg.color,
           side: THREE.DoubleSide,
@@ -4364,52 +4608,31 @@
         portalsGroup.add(pRing);
         portalRings3d.push(pRing);
 
-        // Floating 3D Signboard Sprite above Portal
-        const signTex = createSignTexture3D(b.short + " (" + b.power + "%)", b.power, b.sign.color, b.power >= 100);
+        // Floating 3D Storybook Signboard Sprite above Portal
+        const signTex = createSignTexture3D(cfg.storybookName, b.short, b.power, b.sign.color, b.power >= 100);
         const signMat = new THREE.SpriteMaterial({ map: signTex, transparent: true });
         const signSprite = new THREE.Sprite(signMat);
-        signSprite.position.set(cfg.portalX, 3.8, cfg.portalZ);
-        signSprite.scale.set(4.5, 1.25, 1);
+        signSprite.position.set(cfg.portalX, 4.1, cfg.portalZ);
+        signSprite.scale.set(4.8, 1.4, 1);
         portalsGroup.add(signSprite);
         signSprites3d[b.id] = signSprite;
       }
 
-      // 8. Decorative Cozy Pine / Cherry Trees around the Perimeter
-      const treeSpots = [[-7, -14], [7, -15], [-18, 0], [18, 1], [-8, 16], [8, 15]];
-      for (let t = 0; t < treeSpots.length; t++) {
-        const tg = new THREE.Group();
-        tg.position.set(treeSpots[t][0], 0, treeSpots[t][1]);
-        const tr = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.25, 0.4, 1.8, 8),
-          new THREE.MeshStandardMaterial({ color: 0x5c3a21 })
+      // 7. 24 Drifting Golden Fireflies in the Sunset Air
+      const fireflyMat = new THREE.MeshBasicMaterial({ color: "#ffe8a2" });
+      for (let i = 0; i < 24; i++) {
+        const fly = new THREE.Mesh(new THREE.SphereGeometry(0.06 + (i % 3) * 0.015, 6, 6), fireflyMat);
+        fly.position.set(
+          Math.sin(i * 6.7) * (6 + (i % 8)),
+          1.1 + (i % 6) * 0.62,
+          Math.cos(i * 4.3) * (5 + (i % 9))
         );
-        tr.position.y = 0.9;
-        const cr = new THREE.Mesh(
-          new THREE.DodecahedronGeometry(1.45, 1),
-          new THREE.MeshStandardMaterial({ color: t % 2 === 0 ? 0x84cc16 : 0xf9a8d4, roughness: 0.75 })
-        );
-        cr.position.y = 2.4;
-        cr.castShadow = true;
-        tg.add(tr, cr);
-        builtInTownGroup.add(tg);
+        fly.userData.sway = i * 3.1;
+        builtInTownGroup.add(fly);
+        fireflies3d.push(fly);
       }
 
-      // 9. Drifting 3D Stylized Ghibli Clouds
-      const cloudMat = new THREE.MeshStandardMaterial({ color: 0xfffbeb, roughness: 0.95, transparent: true, opacity: 0.85 });
-      for (let c = 0; c < 6; c++) {
-        const cg = new THREE.Group();
-        const angle = (c / 6) * Math.PI * 2;
-        cg.position.set(Math.cos(angle) * 26, 15 + (c % 3) * 2.5, Math.sin(angle) * 26);
-        const s1 = new THREE.Mesh(new THREE.SphereGeometry(2.2, 12, 12), cloudMat);
-        const s2 = new THREE.Mesh(new THREE.SphereGeometry(1.6, 12, 12), cloudMat);
-        s2.position.set(1.8, -0.3, 0.4);
-        const s3 = new THREE.Mesh(new THREE.SphereGeometry(1.5, 12, 12), cloudMat);
-        s3.position.set(-1.7, -0.4, -0.2);
-        cg.add(s1, s2, s3);
-        clouds3dGroup.add(cg);
-      }
-
-      // 10. Falling 3D Sakura Petals
+      // 8. Falling 3D Sakura Petals
       const petalGeo = new THREE.PlaneGeometry(0.22, 0.14);
       const petalMat = new THREE.MeshBasicMaterial({ color: 0xf9a8d4, side: THREE.DoubleSide });
       for (let p = 0; p < 36; p++) {
@@ -4469,6 +4692,54 @@
       av3d.spriteTex.needsUpdate = true;
     }
 
+    function toggle3DCameraPerspective() {
+      thirdPerson3D = !thirdPerson3D;
+      const btn = document.getElementById("cameraModeToggleBtn");
+      if (btn) {
+        btn.textContent = thirdPerson3D ? "🚶‍♀️ View: Third Person" : "👁️ View: First Person";
+      }
+      if (av3d.mesh) av3d.mesh.visible = thirdPerson3D;
+      if (av3d.shadowMesh) av3d.shadowMesh.visible = thirdPerson3D;
+    }
+
+    function resetAvatarToPlaza() {
+      av3d.x = 0;
+      av3d.z = 18.0;
+      av3d.y = 0.05;
+      av3d.targetX = null;
+      av3d.targetZ = null;
+      camOrbit.yaw = 0;
+      camOrbit.pitch = thirdPerson3D ? 0.28 : 0.0;
+    }
+
+    function openStorybookCard(bId) {
+      const cfg = BUILDINGS_3D_LAYOUT[bId];
+      if (!cfg) return;
+      currentCardBuildingId = bId;
+      if (!visitedPlaces3D.includes(bId)) {
+        visitedPlaces3D.push(bId);
+        const countEl = document.getElementById("placesFoundCount");
+        if (countEl) countEl.textContent = String(visitedPlaces3D.length);
+      }
+      document.getElementById("sbCardEyebrow").textContent = cfg.storybookKind;
+      document.getElementById("sbCardTitle").textContent = cfg.storybookName;
+      document.getElementById("sbCardDesc").textContent = cfg.storybookDesc;
+      document.getElementById("storybookCardModal").classList.remove("hidden");
+      playChimeSound();
+    }
+
+    function closeStorybookCard() {
+      document.getElementById("storybookCardModal").classList.add("hidden");
+    }
+
+    function enterRoomFromStorybookCard() {
+      const targetId = currentCardBuildingId || (activeBuilding && activeBuilding.id);
+      closeStorybookCard();
+      if (targetId) {
+        switchScene(targetId);
+      }
+    }
+
     // ─── 3D CAMERA ORBIT, CLICK-TO-WALK & DRAG-AND-DROP LISTENERS ─────────
     const raycaster3d = new THREE.Raycaster();
     const mouse3d = new THREE.Vector2();
@@ -4492,8 +4763,12 @@
         if (Math.hypot(e.clientX - camOrbit.downX, e.clientY - camOrbit.downY) > 5) {
           camOrbit.dragMoved = true;
         }
-        camOrbit.yaw -= dx * 0.0075;
-        camOrbit.pitch = Math.max(0.18, Math.min(1.25, camOrbit.pitch + dy * 0.0065));
+        camOrbit.yaw -= dx * 0.0065;
+        if (thirdPerson3D) {
+          camOrbit.pitch = Math.max(0.12, Math.min(1.15, camOrbit.pitch + dy * 0.0055));
+        } else {
+          camOrbit.pitch = Math.max(-0.55, Math.min(0.45, camOrbit.pitch - dy * 0.0045));
+        }
         camOrbit.lastX = e.clientX;
         camOrbit.lastY = e.clientY;
       });
@@ -4514,7 +4789,7 @@
           if (portalHits.length > 0) {
             const bId = portalHits[0].object.userData.buildingId;
             if (bId) {
-              switchScene(bId);
+              openStorybookCard(bId);
               return;
             }
           }
@@ -4531,7 +4806,7 @@
 
       town3dCanvas.addEventListener("wheel", function(e) {
         e.preventDefault();
-        camOrbit.dist = Math.max(8, Math.min(42, camOrbit.dist + e.deltaY * 0.018));
+        camOrbit.dist = Math.max(4.5, Math.min(36, camOrbit.dist + e.deltaY * 0.015));
       }, { passive: false });
 
       // Spacebar Jump in 3D Town
@@ -4545,7 +4820,7 @@
         }
       });
 
-      // Drag and Drop .glb / .ply files directly onto the canvas container
+      // Drag and Drop .spz / .glb / .ply files directly onto the canvas container
       const container = town3dCanvas.parentElement;
       const dropOverlay = document.getElementById("drop3dOverlay");
       if (container) {
@@ -4574,18 +4849,18 @@
     function updateAndRenderTown3D() {
       if (!scene3d || !renderer3d) return;
 
-      // Sync Lighting & Fog with Day/Night & Fog Toggles
-      const targetBg = state.night_mode ? 0x090d1a : 0xfde68a;
+      // Sync Sunset Golden-Hour vs Starlight Night Lighting & Fog
+      const targetBg = state.night_mode ? 0x0d1322 : 0xd3a778;
       scene3d.background.setHex(targetBg);
       if (state.fog_enabled) {
         scene3d.fog.color.setHex(targetBg);
-        scene3d.fog.density = state.night_mode ? 0.018 : 0.011;
+        scene3d.fog.density = state.night_mode ? 0.014 : 0.0084;
       } else {
         scene3d.fog.density = 0.0;
       }
-      hemiLight3d.intensity = state.night_mode ? 0.28 : 0.88;
-      dirLight3d.intensity = state.night_mode ? 0.25 : 1.15;
-      plazaLight3d.intensity = state.night_mode ? 2.0 : 1.1;
+      hemiLight3d.intensity = state.night_mode ? 0.35 : 1.85;
+      dirLight3d.intensity = state.night_mode ? 0.35 : 2.8;
+      plazaLight3d.intensity = state.night_mode ? 2.2 : 1.35;
 
       // Camera-Relative WASD Movement in 3D
       const av = state.avatar;
@@ -4594,10 +4869,9 @@
       if (keys["w"] || keys["arrowup"]) moveForward += 1;
       if (keys["s"] || keys["arrowdown"]) moveForward -= 1;
       if (keys["d"] || keys["arrowright"]) moveRight += 1;
-      if (keys["a"] || keys["arrowleft"]) moveLeftOrRight = -1;
       if (keys["a"] || keys["arrowleft"]) moveRight -= 1;
 
-      const speed3d = 0.14;
+      const speed3d = 0.135;
       let vx = 0, vz = 0;
 
       if (moveForward !== 0 || moveRight !== 0) {
@@ -4638,8 +4912,13 @@
       }
 
       if (vx !== 0 || vz !== 0) {
-        av3d.x = Math.max(-23, Math.min(23, av3d.x + vx));
-        av3d.z = Math.max(-23, Math.min(23, av3d.z + vz));
+        av3d.x += vx;
+        av3d.z += vz;
+        const rad = Math.hypot(av3d.x, av3d.z);
+        if (rad > 25.5) {
+          av3d.x *= 25.5 / rad;
+          av3d.z *= 25.5 / rad;
+        }
         av.isMoving = true;
         av.walkTick += 0.09;
       } else {
@@ -4647,12 +4926,12 @@
         av.idleTick += 0.02;
       }
 
-      // Sync 2D coordinates so HUD telemetry & proximity stay synchronized
-      av.x = Math.round(250 + av3d.x * 8.5);
-      av.y = Math.round(248 + av3d.z * 8.5);
+      // Sync 2D coordinates so HUD telemetry stays synchronized
+      av.x = Math.round(250 + av3d.x * 8.0);
+      av.y = Math.round(248 + av3d.z * 8.0);
 
       // Raycast Downward onto Walkable 3D Terrain / Imported OpenArt .GLB Mesh
-      let groundY = 0.05;
+      let groundY = 0.04;
       if (walkableMeshes.length > 0) {
         downRaycaster3d.set(new THREE.Vector3(av3d.x, 35, av3d.z), downDir3d);
         const hits = downRaycaster3d.intersectObjects(walkableMeshes, true);
@@ -4676,23 +4955,30 @@
 
       // Update 3D Chibi Gabrielle Billboard Position & Orientation
       if (av3d.mesh) {
+        av3d.mesh.visible = thirdPerson3D;
         update3DChibiGabrielleTexture();
         av3d.mesh.position.set(av3d.x, av3d.y + 1.45, av3d.z);
         av3d.mesh.rotation.y = camOrbit.yaw;
       }
       if (av3d.shadowMesh) {
+        av3d.shadowMesh.visible = thirdPerson3D;
         av3d.shadowMesh.position.set(av3d.x, groundY + 0.06, av3d.z);
       }
 
-      // Check 3D Proximity to Portals & Bounty Board
+      // Check 3D Proximity to Storybook Houses / Portals & Bounty Board
       nearBountyBoard = Math.hypot(av3d.x - BOUNTY_3D_POS.x, av3d.z - BOUNTY_3D_POS.z) < 2.8;
       let foundB = null;
+      let bestDist = 999;
       for (let i = 0; i < state.buildings.length; i++) {
         const b = state.buildings[i];
         const cfg = BUILDINGS_3D_LAYOUT[b.id];
-        if (cfg && Math.hypot(av3d.x - cfg.portalX, av3d.z - cfg.portalZ) < 3.4) {
+        if (!cfg) continue;
+        const dPortal = Math.hypot(av3d.x - cfg.portalX, av3d.z - cfg.portalZ);
+        const dHouse = Math.hypot(av3d.x - cfg.x, av3d.z - cfg.z);
+        const dMin = Math.min(dPortal, dHouse - 2.2);
+        if (dMin < 4.5 && dMin < bestDist) {
+          bestDist = dMin;
           foundB = b;
-          break;
         }
       }
       if (foundB !== activeBuilding || nearBountyBoard) {
@@ -4702,36 +4988,45 @@
         const descEl = document.getElementById("activeSectorDesc");
         const promptEl = document.getElementById("sectorPrompt");
         if (nearBountyBoard) {
-          titleEl.textContent = "📋 THE BOUNTY BOARD (3D PLAZA)";
+          titleEl.textContent = "📋 THE BOUNTY BOARD (PLAZA)";
           powerEl.textContent = "QUESTS ACTIVE";
           powerEl.className = "px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30";
           descEl.textContent = "3D Village bulletin board with parchment habit bounties. Click or press Space to inspect!";
           promptEl.textContent = "📋 Bounty Board [Press Space]";
         } else if (activeBuilding) {
-          titleEl.textContent = activeBuilding.name;
+          const cfg = BUILDINGS_3D_LAYOUT[activeBuilding.id];
+          titleEl.textContent = cfg ? (cfg.storybookName + " • " + activeBuilding.short) : activeBuilding.name;
           powerEl.textContent = activeBuilding.power >= 100 ? "100% RESTORED" : (activeBuilding.power >= 30 ? (activeBuilding.power + "% BLUEPRINT") : (activeBuilding.power + "% DORMANT"));
-          descEl.textContent = activeBuilding.desc;
-          promptEl.textContent = "📍 " + activeBuilding.short + " Portal [Press E]";
+          descEl.textContent = cfg ? cfg.storybookDesc : activeBuilding.desc;
+          promptEl.textContent = "✨ Step inside " + (cfg ? cfg.storybookName : activeBuilding.short) + " [E]";
+          if (!visitedPlaces3D.includes(activeBuilding.id)) {
+            visitedPlaces3D.push(activeBuilding.id);
+            const countEl = document.getElementById("placesFoundCount");
+            if (countEl) countEl.textContent = String(visitedPlaces3D.length);
+          }
         } else {
           const tp = state.tree_power || 35;
-          titleEl.textContent = "🌍 3D SANCTUARY COURTYARD";
-          powerEl.textContent = "3D WORLD (" + tp + "%)";
-          descEl.textContent = "Walkable 3D Ghibli Sanctuary Town. Walk to any glowing portal ring & press [E] to enter its Cutaway Room!";
-          promptEl.textContent = "🌳 3D Tree of Vision Plaza";
+          titleEl.textContent = "🏮 LANTERN VILLAGE COMMONS";
+          powerEl.textContent = "STORYBOOK 3D (" + tp + "%)";
+          descEl.textContent = "Somewhere, unhurried. Follow the lanterns across the 13-ring cobblestone plaza to discover all 5 sanctuaries.";
+          promptEl.textContent = "🌳 Tree of Vision Commons";
         }
         updateInspector();
       }
-      document.getElementById("legStateTag").textContent = av.isMoving ? "3D Walking" : (av3d.isGrounded ? "3D Grounded" : "Jumping!");
+      document.getElementById("legStateTag").textContent = av.isMoving ? "Wandering" : (av3d.isGrounded ? "Unhurried" : "Jumping!");
 
-      // Animate Portal Rings, Clouds, and Falling 3D Sakura Petals
+      // Animate Portal Rings, Fireflies, and Falling 3D Sakura Petals
       for (let i = 0; i < portalRings3d.length; i++) {
         const r = portalRings3d[i];
         const isCurrent = activeBuilding && r.userData.buildingId === activeBuilding.id;
-        const pulse = isCurrent ? (1.15 + Math.sin(state.time * 5) * 0.12) : (1.0 + Math.sin(state.time * 2 + i) * 0.04);
+        const pulse = isCurrent ? (1.18 + Math.sin(state.time * 5) * 0.12) : (1.0 + Math.sin(state.time * 2 + i) * 0.04);
         r.scale.set(pulse, pulse, 1);
       }
 
-      clouds3dGroup.rotation.y = state.time * 0.015;
+      for (let i = 0; i < fireflies3d.length; i++) {
+        const fly = fireflies3d[i];
+        fly.position.y += Math.sin(state.time * 1.3 + fly.userData.sway) * 0.0022;
+      }
 
       for (let i = 0; i < petals3dGroup.children.length; i++) {
         const pm = petals3dGroup.children[i];
@@ -4744,12 +5039,18 @@
         }
       }
 
-      // Smooth Third-Person Orbit Camera Following Gabrielle
-      const camX = av3d.x + Math.sin(camOrbit.yaw) * Math.cos(camOrbit.pitch) * camOrbit.dist;
-      const camY = av3d.y + Math.sin(camOrbit.pitch) * camOrbit.dist + 1.5;
-      const camZ = av3d.z + Math.cos(camOrbit.yaw) * Math.cos(camOrbit.pitch) * camOrbit.dist;
-      camera3d.position.set(camX, camY, camZ);
-      camera3d.lookAt(av3d.x, av3d.y + 1.4, av3d.z);
+      // First-Person vs Third-Person Camera Positioning (from Storybook-Village-Plaza)
+      if (thirdPerson3D) {
+        const camX = av3d.x + Math.sin(camOrbit.yaw) * Math.cos(camOrbit.pitch) * camOrbit.dist;
+        const camY = av3d.y + Math.sin(camOrbit.pitch) * camOrbit.dist + 1.4;
+        const camZ = av3d.z + Math.cos(camOrbit.yaw) * Math.cos(camOrbit.pitch) * camOrbit.dist;
+        camera3d.position.set(camX, camY, camZ);
+        camera3d.lookAt(av3d.x, av3d.y + 1.35, av3d.z);
+      } else {
+        camera3d.position.set(av3d.x, av3d.y + 1.72, av3d.z);
+        camera3d.rotation.order = "YXZ";
+        camera3d.rotation.set(camOrbit.pitch, camOrbit.yaw, 0);
+      }
 
       renderer3d.render(scene3d, camera3d);
     }
@@ -4798,7 +5099,6 @@
       const badge = document.getElementById("openArtStatusBadge");
       if (badge) badge.textContent = "Loading " + file.name + "...";
 
-      // Clear previous custom world
       while (customWorldGroup.children.length > 0) {
         customWorldGroup.remove(customWorldGroup.children[0]);
       }
@@ -4811,7 +5111,6 @@
           const size = box.getSize(new THREE.Vector3());
           const center = box.getCenter(new THREE.Vector3());
 
-          // Normalize scale to ~40 units across
           const maxDim = Math.max(size.x, size.y, size.z) || 1;
           const normScale = 38 / maxDim;
           model.scale.setScalar(normScale);
@@ -4828,7 +5127,6 @@
           model.userData.baseScale = normScale;
           customWorldGroup.add(model);
 
-          // Automatically hide built-in procedural terrain so the OpenArt 3D world shines!
           const hideCheck = document.getElementById("hideBuiltInMeshCheck");
           if (hideCheck) hideCheck.checked = true;
           updateOpenArtTransform();
@@ -4920,10 +5218,8 @@
       if (hideCheck) hideCheck.checked = false;
       if (builtInTownGroup) builtInTownGroup.visible = true;
       const badge = document.getElementById("openArtStatusBadge");
-      if (badge) badge.textContent = "Built-In 3D Town Active";
-      av3d.x = 0;
-      av3d.z = 6.5;
-      av3d.y = 0.05;
+      if (badge) badge.textContent = "Storybook 3D Village Active";
+      resetAvatarToPlaza();
     }
 
     // ─── NATIVE .SPZ GAUSSIAN SPLAT DECOMPRESSOR & 3D MODULAR KIT SLICER ───
@@ -4959,63 +5255,9 @@
     }
 
     function mountModularKitAssetsInto3DAndBinder() {
-      // 1. Load High-Res 8-Building Closeup Sheet for 3D Diorama Buildings
-      const bSheet = new Image();
-      bSheet.onload = function() {
-        const keys = Object.keys(BUILDINGS_3D_LAYOUT);
-        for (let i = 0; i < keys.length; i++) {
-          const bId = keys[i];
-          const cfg = BUILDINGS_3D_LAYOUT[bId];
-          if (!cfg || !cfg.crop) continue;
-          const croppedCanvas = extractTransparentCropCanvas(
-            bSheet,
-            cfg.crop[0], cfg.crop[1], cfg.crop[2], cfg.crop[3],
-            320, 320
-          );
-          const tex = new THREE.CanvasTexture(croppedCanvas);
-          tex.needsUpdate = true;
-
-          // Mount High-Res 3D Architectural Standee right at the building position facing the courtyard!
-          const standeeMat = new THREE.MeshBasicMaterial({
-            map: tex,
-            transparent: true,
-            alphaTest: 0.08,
-            side: THREE.DoubleSide
-          });
-          const standee = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 7.2), standeeMat);
-          // Place slightly in front of procedural roof/body volume so it has both 3D shadow depth & studio illustration fidelity
-          const dirX = -cfg.x;
-          const dirZ = -cfg.z;
-          const len = Math.hypot(dirX, dirZ) || 1;
-          standee.position.set(cfg.x + (dirX / len) * 1.2, 3.3, cfg.z + (dirZ / len) * 1.2);
-          standee.lookAt(0, 3.3, 0);
-          builtInTownGroup.add(standee);
-        }
-      };
-      bSheet.src = "sanctuary_buildings_closeup_sheet.jpg";
-
-      // 2. Load Full Modular Kit Sheet for the Tree of Vision + 10 Placeable Modular Props
+      // Extract 10 Modular Town Props from sanctuary_modular_kit_sheet.jpg & Add to Sticker/Prop Binder!
       const kitSheet = new Image();
       kitSheet.onload = function() {
-        // Extract Glowing Cherry-Blossom Tree of Vision (Top-Left of kitSheet)
-        const treeCan = extractTransparentCropCanvas(kitSheet, 0.015, 0.02, 0.225, 0.37, 360, 360);
-        const treeTex = new THREE.CanvasTexture(treeCan);
-        treeTex.needsUpdate = true;
-        const treeMat = new THREE.MeshBasicMaterial({
-          map: treeTex,
-          transparent: true,
-          alphaTest: 0.08,
-          side: THREE.DoubleSide
-        });
-        // Crossed 3D planes for full volumetric 360-degree viewing of the Tree of Vision
-        const treePlane1 = new THREE.Mesh(new THREE.PlaneGeometry(8.5, 8.5), treeMat);
-        treePlane1.position.set(0, 4.1, 0);
-        const treePlane2 = new THREE.Mesh(new THREE.PlaneGeometry(8.5, 8.5), treeMat);
-        treePlane2.position.set(0, 4.1, 0);
-        treePlane2.rotation.y = Math.PI / 2;
-        builtInTownGroup.add(treePlane1, treePlane2);
-
-        // Extract 10 Modular Town Props & Add to Sticker/Prop Binder!
         const modularProps = [
           { id: "kit_stone_wall",    name: "Mossy Stone Wall",    cat: "clutter", crop: [0.50, 0.42, 0.14, 0.11] },
           { id: "kit_stone_arch",    name: "Mossy Stone Arch",    cat: "clutter", crop: [0.67, 0.42, 0.08, 0.11] },
