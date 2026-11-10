@@ -4,30 +4,25 @@
 
 ---
 
-## 🛠️ FIX LIST (from the 2026-11-09 code review)
-*(Bugs and loose ends in what is already built. Clear the 🔴 ones before logging real habits.)*
+## 🛠️ WHERE THE WORK LIVES NOW (updated 2026-11-09)
 
-- [ ] 🔴 **Second similar check-in returns a 500.** The engine reports `"reinforced"`, but `HabitLogResponse.memory_action` only allows `created / merged / graduated` (`lab05_api_gateway.py`). The power boost is saved before the error, so retrying double-counts.
-- [ ] 🔴 **`GET /api/v1/npcs` always fails.** `api.py` calls `.values()` on `registry.npcs`, which is a list.
-- [ ] 🔴 **Memory Vault is saved but never loaded.** `load_state()` restores the world and session only, so observations reset on every restart and can never reach 3 accesses across runs.
-- [ ] 🔴 **An oversized `power_boost` wipes the save.** `HabitLogRequest` has no limits (spec: text 3-280 chars, boost 1-50). A boost of 500 writes `power_level: 420`, the next load fails validation and silently starts fresh. Negative boosts drain power.
-- [ ] 🟡 **Restored buildings fall back to blueprint.** After a level-up sets `color_restored`, the next check-in at 30%+ power resets it to `blueprint_glow` (`sanctuary_engine.py`).
-- [ ] 🟡 **Graduated memories are dropped.** They leave the vault but there is no Tier 3 store to receive them.
-- [ ] 🟡 **`current_session` never advances**, so every check-in is "session 1" and the 5-session decay in the README cannot work.
-- [ ] 🟡 **Observation ids repeat** after an eviction or graduation (`new_id = len(items) + 1`).
-- [ ] 🟡 **Sector level can pass 10**, which also makes the save unloadable.
-- [ ] 🟡 **Fresh-start defaults are the old inflated numbers** (`world_state.py`: Academy 35, Vault 14, Dojo 15). The honest baselines only exist in `sanctuary_save.json`.
-- [ ] 🟡 **Running `python lab05_api_gateway.py` logs a real +20 habit** into the committed `sanctuary_save.json` every time. Point the demo at a temp file.
-- [ ] ⚪ `pyproject.toml` is missing `fastapi` and `uvicorn`; the README clone URL is still `your-username`.
-- [ ] ⚪ `index.html` and `cultivate_sanctuary_sim.html` are identical 5,441-line copies. Keep one, or generate the other.
-- [ ] ⚪ The `bounties` list in `world_state.py` has 4 of the 6 bounties below, and files #001 under `memory_vault`.
-- [ ] ⚪ The comm-link chat puts typed text straight into `innerHTML` (`index.html`); use `textContent`.
+- **The quest map is `quests.json`.** Eight villagers, one quest line each. Run `python tools/referee.py` for the scoreboard.
+- **The bugs from the code review are now Debug-it labs** you solve yourself: `pyd-06`, `pyd-07`, `pyd-08` (Professor Pydantic) and `bob-06`, `bob-07`, `bob-08` (Archivist Bobbin).
+- **Graduated memories being dropped** is now a Code-it lab: `bob-09`, the long-term shelf.
+- This file stays as the idea vault. Each bounty below notes which quest line it belongs to.
+
+Loose ends that are not labs yet:
+- [ ] `current_session` never advances, so the 5-session decay in the old README cannot work.
+- [ ] Fresh-start defaults in `world_state.py` are the old inflated numbers, and its `bounties` list has 4 of the 6 bounties.
+- [ ] Running `python lab05_api_gateway.py` logs a real +20 habit into the committed `sanctuary_save.json` every time.
+- [ ] `api.py` and `world_state.py` still use the old sector ids (`neural_academy`, `cipher_teahouse`); the village and `quests.json` use `ai_academy`, `tea_house`.
+- [ ] The comm-link chat puts typed text straight into `innerHTML` (`js/village.js`); use `textContent`.
 
 ---
 
 ## 🔓 TIER 1 BOUNTIES (Unlocked: Stage 1 Core Engine is online)
 
-### 🎯 BOUNTY #001: SANCTUARY NEWS NETWORK (SNN)
+### 🎯 BOUNTY #001: SANCTUARY NEWS NETWORK (SNN) → Tree DJ's quest line
 - **Sector:** `05 · Town Bulletin / Broadcast Tower`
 - **The Vision:** An AI News Show hosted by cute pixel/2D news anchor avatars that summarizes daily AI breakthroughs and tech newsletters (inspired by Naya's morning AI news habit).
 - **AI Engineering Concepts Unlocked:** Web scraping / RSS ingestion, LLM summarization pipelines, TTS (Text-to-Speech / ElevenLabs API) + avatar lip-sync state.
@@ -38,13 +33,13 @@
 
 ## 🔒 TIER 2 BOUNTIES (Unlocks at Sector Level 3+)
 
-### 🎯 BOUNTY #002: BIO-TELEMETRY LINK (Fitness Watch Integration)
+### 🎯 BOUNTY #002: BIO-TELEMETRY LINK (Fitness Watch Integration) → Sensei Pushup's quest line
 - **Sector:** `04 · The Kinetic Dojo`
 - **The Vision:** Connect real smartwatch / Apple Health / Garmin / Strava workout data directly to the Kinetic Dojo so heart rate, steps, and calisthenics sessions automatically charge the village power grid without manual entry.
 - **AI Engineering Concepts Unlocked:** OAuth2 webhooks, time-series health data ingestion, automated anomaly/streak detection.
 - **Prerequisite:** Kinetic Dojo Level 3.
 
-### 🎯 BOUNTY #003: SONIC RESONANCE ENGINE (Music & Vibe Monitor)
+### 🎯 BOUNTY #003: SONIC RESONANCE ENGINE (Music & Vibe Monitor) → Mochi's quest line
 - **Sector:** `01 · The Memory Vault` + `05 · The Atelier`
 - **The Vision:** Future Gabrielle monitors what you're listening to (Spotify/Apple Music API), correlates your music patterns with your focus/energy levels in Short-Term Memory, and recommends playlists or shifts the village background audio/aesthetic to match.
 - **AI Engineering Concepts Unlocked:** Spotify API integration, behavioral correlation in Tier 2 Memory, recommendation embeddings.
@@ -62,7 +57,7 @@
 - **Prerequisite:** Stage 2 Village Map Online. ✅ Met.
 - **Status:** In progress. Isometric cutaway rooms and room entry exist in `index.html`; context-scoped AI agents per room are not built.
 
-### 🎯 BOUNTY #005: KINETIC DECONSTRUCTOR & RPG SKILL TREE (Calisthenics AI Coach)
+### 🎯 BOUNTY #005: KINETIC DECONSTRUCTOR & RPG SKILL TREE (Calisthenics AI Coach) → Sensei Pushup's quest line
 - **Sector:** `04 · The Kinetic Dojo`
 - **The Vision:** 
   1. **AI Move Deconstructor:** An agent where you type any target calisthenics skill (e.g., Handstand, Muscle-Up, Pistol Squat, L-Sit). The AI analyzes the biomechanics, breaks it down into primary/secondary muscle groups and prerequisite baseline progressions (e.g., Hollow Body Hold $\rightarrow$ Scapular Pulls $\rightarrow$ Negative Dip), and generates a personalized HIIT/progression workout.
@@ -70,7 +65,7 @@
 - **AI Engineering & Game Concepts Unlocked:** Directed Acyclic Graph (DAG) progression trees, biomechanical prompt schemas, dynamic HIIT workout generation, interactive SVG/Canvas node graph.
 - **Prerequisite:** Kinetic Dojo Level 2.
 
-### 🎯 BOUNTY #006: SANCTUARY PACKS (Shareable NPC / Goal / Teacher Harness)
+### 🎯 BOUNTY #006: SANCTUARY PACKS (Shareable NPC / Goal / Teacher Harness) → Professor Pydantic's capstone
 - **Sector:** `All Sectors` + `Memory Vault` (pack library)
 - **The Vision:** Build and share your own NPCs, goal frameworks and teachers as portable **packs**, like a harness anyone can plug in. Make a pack (e.g. "Mandarin Tea Auntie", "Calisthenics Sensei", "Interview Prep Coach"), export it as one file, and someone else imports it into their own village. Each NPC has a name, species, personality traits, catchphrase, what it teaches, unlock condition and lesson style.
   - **Personality traits** drive how NPCs talk, tease and teach.

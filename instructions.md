@@ -18,5 +18,5 @@
 - **Active Phase:** Lab 04 & 05 Complete; Live GitHub Pages Production Deployment Active! ✅
 - **Public URL:** `https://gabriellehandy.github.io/cultivate-sanctuary/`
 - **Sector Calibrations:** Grounded to honest earned baselines (Neural Academy 25% Blueprint Glow, Memory Vault 25%, Safe House 20%, Tea House 10%, Dojo 10%).
-- **Before the next step:** Clear the 🔴 items in the Fix List at the top of `bounty_board.md` (a second similar check-in currently returns a 500, and the Memory Vault does not survive a restart).
-- **Next Technical Step:** Logging your first real-life habit check-in via the FastAPI Gateway / CLI to earn your next true village power boost!
+- **Purpose:** Each house hosts an AI-engineering project Gabrielle builds herself. Progress comes only from passed labs (`quests.json`, `labs/`, `python tools/referee.py`). Do not write lab solutions for her.
+- **Next Technical Step:** Pick any available lab from a villager's quest card. The Debug-it labs (`pyd-06` to `pyd-08`, `bob-06` to `bob-08`) are the suggested start.
