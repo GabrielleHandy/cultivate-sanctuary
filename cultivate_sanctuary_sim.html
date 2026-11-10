@@ -4161,6 +4161,100 @@
       }
     }
 
+    // ─── GLB MODEL OVERRIDES (assets/models/models.json) ──────────────────
+    // Each entry in models.json swaps one procedural landmark for a hand-made .glb.
+    // The procedural version stays in place as the fallback if a model is missing or fails.
+    const MODELS_3D_DIR = "assets/models/";
+    const modelSlots3d = {};    // slotId -> { group, body: [procedural meshes], fit: "footprint" | "height" }
+    const loadedModels3d = {};  // slotId -> THREE.Group holding the loaded model
+
+    function registerModelSlot3D(slotId, group, bodyChildren, fit) {
+      modelSlots3d[slotId] = { group: group, body: bodyChildren, fit: fit };
+    }
+
+    // Bounding box of the procedural meshes in the slot group's own (unrotated) space
+    function modelSlotBounds3D(slot) {
+      const g = slot.group;
+      const savedPos = g.position.clone();
+      const savedRot = g.rotation.clone();
+      g.position.set(0, 0, 0);
+      g.rotation.set(0, 0, 0);
+      g.updateMatrixWorld(true);
+      const box = new THREE.Box3();
+      slot.body.forEach(function(child) { box.expandByObject(child); });
+      g.position.copy(savedPos);
+      g.rotation.copy(savedRot);
+      g.updateMatrixWorld(true);
+      return box;
+    }
+
+    function applyModelOverride3D(slotId, opts) {
+      const slot = modelSlots3d[slotId];
+      if (!slot) { console.warn("[models] Unknown slot in models.json: " + slotId); return; }
+      if (!opts || !opts.file || !THREE.GLTFLoader) return;
+
+      new THREE.GLTFLoader().load(MODELS_3D_DIR + opts.file, function(gltf) {
+        const model = gltf.scene;
+        const target = modelSlotBounds3D(slot);
+        const tSize = target.getSize(new THREE.Vector3());
+        const tCenter = target.getCenter(new THREE.Vector3());
+
+        const mBox = new THREE.Box3().setFromObject(model);
+        const mSize = mBox.getSize(new THREE.Vector3());
+        const mCenter = mBox.getCenter(new THREE.Vector3());
+
+        // Auto-fit: houses match the procedural footprint, the tree matches its height
+        const byHeight = slot.fit === "height";
+        const modelDim = (byHeight ? mSize.y : Math.max(mSize.x, mSize.z)) || 1;
+        const targetDim = opts.size > 0 ? opts.size : (byHeight ? tSize.y : Math.max(tSize.x, tSize.z));
+        const fitScale = (targetDim / modelDim) * (opts.scale > 0 ? opts.scale : 1);
+
+        // Re-centre the model so it sits on the ground at the holder's origin
+        model.position.set(-mCenter.x, -mBox.min.y, -mCenter.z);
+        const holder = new THREE.Group();
+        holder.name = "glb model: " + slotId;
+        holder.add(model);
+        holder.scale.setScalar(fitScale);
+        holder.rotation.y = ((opts.rotationDeg || 0) * Math.PI) / 180;
+        holder.position.set(tCenter.x + (opts.offsetX || 0), opts.offsetY || 0, tCenter.z + (opts.offsetZ || 0));
+
+        const linearOutput = renderer3d && renderer3d.outputEncoding !== THREE.sRGBEncoding;
+        model.traverse(function(child) {
+          if (!child.isMesh) return;
+          child.castShadow = true;
+          child.receiveShadow = true;
+          // The village renders without sRGB output, so keep model textures in the same space
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(function(m) {
+            if (!m || !linearOutput) return;
+            if (m.map) { m.map.encoding = THREE.LinearEncoding; m.map.needsUpdate = true; }
+            if (m.emissiveMap) { m.emissiveMap.encoding = THREE.LinearEncoding; m.emissiveMap.needsUpdate = true; }
+            m.needsUpdate = true;
+          });
+        });
+
+        slot.body.forEach(function(child) { child.visible = false; });
+        if (loadedModels3d[slotId]) slot.group.remove(loadedModels3d[slotId]);
+        slot.group.add(holder);
+        loadedModels3d[slotId] = holder;
+      }, undefined, function() {
+        console.warn("[models] Could not load " + MODELS_3D_DIR + opts.file + " for " + slotId + ". Keeping the built-in version.");
+      });
+    }
+
+    function loadModelOverrides3D() {
+      if (location.protocol === "file:") return;  // browsers block model loading from file://
+      fetch(MODELS_3D_DIR + "models.json", { cache: "no-cache" })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(cfg) {
+          if (!cfg || !cfg.models) return;
+          Object.keys(cfg.models).forEach(function(slotId) {
+            applyModelOverride3D(slotId, cfg.models[slotId]);
+          });
+        })
+        .catch(function(err) { console.warn("[models] models.json could not be read:", err); });
+    }
+
     function createStorybookHouse3D(parentGroup, cfg, bObj) {
       const g = new THREE.Group();
       g.position.set(cfg.x, 0, cfg.z);
@@ -4308,6 +4402,9 @@
         sbBox(g, "location sign", [0, 3.36, -3.08], [2.5, 0.43, 0.14], darkWood);
       }
 
+      // Everything built so far is the house body, which a .glb model may replace
+      registerModelSlot3D(cfg.id, g, g.children.slice(), "footprint");
+
       // 5 Stone Threshold Stepping Tiles joining the house to the central cobblestone plaza
       const pathMat = sbMat("#ad9674");
       for (let i = 0; i < 5; i++) {
@@ -4424,6 +4521,7 @@
       scene3d.add(petals3dGroup);
 
       buildProcedural3DSanctuary();
+      loadModelOverrides3D();
       mountModularKitAssetsInto3DAndBinder();
       build3DChibiGabrielle();
       setup3DEventListeners();
@@ -4469,12 +4567,14 @@
 
       // 3. The Ancient Sacred Tree of Vision: 9 Branches + 50 Blossom & Gold Icosahedron Clusters + Golden Torus Halo
       const trunkMat = sbMat("#755137");
-      const trunk = sbCylinder(builtInTownGroup, [0, 3.3, 0], 0.62, 0.92, 6.5, trunkMat, 9);
+      const treeGroup = new THREE.Group();
+      builtInTownGroup.add(treeGroup);
+      const trunk = sbCylinder(treeGroup, [0, 3.3, 0], 0.62, 0.92, 6.5, trunkMat, 9);
       trunk.rotation.z = -0.08;
       for (let i = 0; i < 9; i++) {
         const angle = (i / 9) * Math.PI * 2;
         const branch = sbCylinder(
-          builtInTownGroup,
+          treeGroup,
           [Math.cos(angle) * 1.75, 5.8 + (i % 3) * 0.4, Math.sin(angle) * 1.4],
           0.13, 0.39, 4.4, trunkMat, 7
         );
@@ -4499,7 +4599,7 @@
         canopy.castShadow = true;
         canopy.receiveShadow = true;
         canopy.userData.sway = Math.random() * Math.PI * 2;
-        builtInTownGroup.add(canopy);
+        treeGroup.add(canopy);
         canopyClusters3d.push(canopy);
       }
 
@@ -4509,7 +4609,8 @@
       );
       treeHalo.rotation.x = Math.PI / 2;
       treeHalo.position.y = 8.1;
-      builtInTownGroup.add(treeHalo);
+      treeGroup.add(treeHalo);
+      registerModelSlot3D("tree_of_vision", treeGroup, treeGroup.children.slice(), "height");
 
       const gardenRing = new THREE.Mesh(new THREE.TorusGeometry(4.35, 0.14, 8, 80), sbMat("#85906a"));
       gardenRing.rotation.x = Math.PI / 2;
