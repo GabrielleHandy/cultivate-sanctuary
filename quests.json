@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "purpose": "A village where every house is an AI-engineering project I built. Passing a lab lights the house and puts a working AI feature inside it.",
+  "places": {
+    "ai_academy": "The Neural Academy",
+    "memory_vault": "The Memory Vault",
+    "tea_house": "The Cipher Tea House",
+    "safe_house": "The Safe House & Atelier",
+    "kinetic_dojo": "The Kinetic Dojo",
+    "plaza": "The Plaza Bounty Board",
+    "tree": "The Tree of Vision",
+    "radio": "The Comm-Link Radio"
+  },
+  "npcs": [
+    {
+      "id": "prof_pydantic",
+      "order": 1,
+      "name": "Professor Pydantic",
+      "species": "owl",
+      "icon": "🦉",
+      "lives_at": "ai_academy",
+      "teaches": "Structured outputs, validation, schemas",
+      "real_build": "The world_state.py guardrails. He rejects bad LLM output in character.",
+      "traits": ["strict", "secretly a softie", "allergic to vibes"],
+      "catchphrase": "Expected: str. Received: vibes.",
+      "greeting": "Hoo. Every creature in this village is data, and data gets validated. Show me what you have built."
+    },
+    {
+      "id": "archivist_bobbin",
+      "order": 2,
+      "name": "Archivist Bobbin",
+      "species": "cat",
+      "icon": "🐈",
+      "lives_at": "memory_vault",
+      "teaches": "Embeddings, RAG, memory retrieval",
+      "real_build": "The 3-tier memory engine. Bobbin recalls your past entries.",
+      "traits": ["sentimental", "files everything", "night owl"],
+      "catchphrase": "Per my records...",
+      "greeting": "Mrrp. The shelves are mostly empty. Bring me something worth remembering and I will keep it safe."
+    },
+    {
+      "id": "auntie_lao_cha",
+      "order": 3,
+      "name": "Auntie Lǎo Chá",
+      "species": "crane",
+      "icon": "🍵",
+      "lives_at": "tea_house",
+      "teaches": "Prompt engineering, evals, TTS",
+      "real_build": "A Mandarin tutor bot. You test its answers, so you practise evaluating LLMs.",
+      "traits": ["nurturing", "blunt", "tea snob"],
+      "catchphrase": "Màn màn lái. Slowly, slowly.",
+      "greeting": "Sit, sit. The kettle is on. One day I will answer you properly, once you teach me how."
+    },
+    {
+      "id": "future_gabrielle",
+      "order": 4,
+      "name": "Future Gabrielle",
+      "species": "signal",
+      "icon": "📡",
+      "lives_at": "radio",
+      "teaches": "Personas, personalization, long context",
+      "real_build": "The comm-link, driven by your vision board and memory.",
+      "traits": ["hopeful", "big-picture", "never guilt-trips"],
+      "catchphrase": "You came back. That is the whole trick.",
+      "greeting": "The signal is faint, but I can hear you. Every lab you pass makes this line clearer."
+    },
+    {
+      "id": "pin",
+      "order": 5,
+      "name": "Pin",
+      "species": "pushpin sprite",
+      "icon": "📌",
+      "lives_at": "plaza",
+      "teaches": "Tool use, agents, task queues",
+      "real_build": "An agent that files your ideas, ranks them and nudges you toward the next one.",
+      "traits": ["mischievous", "disciplined", "pins things upside-down"],
+      "catchphrase": "Pinned it. Next!",
+      "greeting": "New idea? Stick it on the board and get back to the quest you are on."
+    },
+    {
+      "id": "mochi",
+      "order": 6,
+      "name": "Mochi",
+      "species": "dust bunny",
+      "icon": "🐇",
+      "lives_at": "safe_house",
+      "teaches": "Scheduling, automation",
+      "real_build": "Reminders and the focus timer.",
+      "traits": ["cheerful", "neat freak", "homebody"],
+      "catchphrase": "Ten minutes. Then tea.",
+      "greeting": "Squeak! One day I will keep your timers. For now I just keep the corners tidy."
+    },
+    {
+      "id": "sensei_pushup",
+      "order": 7,
+      "name": "Sensei Pushup",
+      "species": "frog",
+      "icon": "🐸",
+      "lives_at": "kinetic_dojo",
+      "teaches": "APIs, webhooks, time-series data",
+      "real_build": "The wearable / Strava sync from Bounty #002.",
+      "traits": ["disciplined", "competitive", "counts everything out loud"],
+      "catchphrase": "One. Two. Data.",
+      "greeting": "Ribbit. The floor is ready when your data is."
+    },
+    {
+      "id": "tree_dj",
+      "order": 8,
+      "name": "Tree DJ",
+      "species": "songbird",
+      "icon": "🎙️",
+      "lives_at": "tree",
+      "teaches": "Voice, TTS, streaming",
+      "real_build": "The Sanctuary News Network from Bounty #001.",
+      "traits": ["dramatic", "music lover", "early bird"],
+      "catchphrase": "Live from the canopy!",
+      "greeting": "Testing, testing. No broadcast yet. I am waiting on a pipeline."
+    }
+  ],
+  "labs": [
+    {
+      "id": "pyd-00", "npc": "prof_pydantic", "title": "World schema guardrails", "format": "Code-it",
+      "skills": ["Pydantic models", "Literal types", "field constraints"],
+      "path": "labs/ai_academy/00_world_schema", "prereqs": [],
+      "unlocks": "The village has a validated shape."
+    },
+    {
+      "id": "pyd-04", "npc": "prof_pydantic", "title": "Professor Pydantic's registry", "format": "Code-it",
+      "skills": ["schemas as contracts", "safe insertion", "filtering"],
+      "path": "labs/ai_academy/04_npc_registry", "prereqs": ["pyd-00"],
+      "unlocks": "NPCs become data anyone can add."
+    },
+    {
+      "id": "pyd-05", "npc": "prof_pydantic", "title": "The API gateway", "format": "Code-it",
+      "skills": ["FastAPI", "request/response contracts", "persistence"],
+      "path": "labs/ai_academy/05_api_gateway", "prereqs": ["pyd-04"],
+      "unlocks": "The village can be reached over HTTP."
+    },
+    {
+      "id": "pyd-06", "npc": "prof_pydantic", "title": "Debug-it: the unguarded door", "format": "Debug-it",
+      "skills": ["input validation", "field limits", "failure modes"],
+      "path": "labs/ai_academy/06_debug_request_limits", "prereqs": ["pyd-05"],
+      "unlocks": "A bad request can no longer wipe the save."
+    },
+    {
+      "id": "pyd-07", "npc": "prof_pydantic", "title": "Debug-it: the second check-in", "format": "Debug-it",
+      "skills": ["contract mismatch", "reading tracebacks", "response models"],
+      "path": "labs/ai_academy/07_debug_repeat_checkin", "prereqs": ["pyd-05"],
+      "unlocks": "Repeating a habit reinforces it instead of crashing."
+    },
+    {
+      "id": "pyd-08", "npc": "prof_pydantic", "title": "Debug-it: the silent roll call", "format": "Debug-it",
+      "skills": ["list vs dict", "endpoint testing"],
+      "path": "labs/ai_academy/08_debug_npc_endpoint", "prereqs": ["pyd-05"],
+      "unlocks": "The village can list who lives in it."
+    },
+    {
+      "id": "pyd-09", "npc": "prof_pydantic", "title": "First model call with a schema", "format": "Code-it",
+      "skills": ["structured output", "JSON parsing", "validate-and-retry"],
+      "path": "labs/ai_academy/09_first_model_call", "prereqs": ["pyd-04"],
+      "unlocks": "The Professor reviews real model output, in character."
+    },
+    {
+      "id": "pyd-10", "npc": "prof_pydantic", "title": "Capstone: Sanctuary Packs", "format": "Code-it",
+      "skills": ["schema versioning", "import/export", "prompt-injection safety"],
+      "path": null, "prereqs": ["pyd-09"], "bounty": "#006",
+      "unlocks": "Shareable NPC and teacher packs."
+    },
+
+    {
+      "id": "bob-01", "npc": "archivist_bobbin", "title": "The 3-tier memory core", "format": "Code-it",
+      "skills": ["Jaccard similarity", "eviction", "graduation"],
+      "path": "labs/memory_vault/01_memory_core", "prereqs": [],
+      "unlocks": "Short-term memory that reinforces and graduates."
+    },
+    {
+      "id": "bob-03", "npc": "archivist_bobbin", "title": "The neural state bridge", "format": "Code-it",
+      "skills": ["composing models", "state transitions"],
+      "path": "labs/memory_vault/03_state_bridge", "prereqs": ["bob-01"],
+      "unlocks": "Actions in the world reach the memory vault."
+    },
+    {
+      "id": "bob-06", "npc": "archivist_bobbin", "title": "Debug-it: the vault that forgets", "format": "Debug-it",
+      "skills": ["serialization round-trips", "state rehydration"],
+      "path": "labs/memory_vault/06_debug_vault_restart", "prereqs": ["bob-03"],
+      "unlocks": "Memories survive a restart."
+    },
+    {
+      "id": "bob-07", "npc": "archivist_bobbin", "title": "Debug-it: two memories, one name", "format": "Debug-it",
+      "skills": ["identity", "invariants"],
+      "path": "labs/memory_vault/07_debug_unique_ids", "prereqs": ["bob-01"],
+      "unlocks": "Every memory has its own id."
+    },
+    {
+      "id": "bob-08", "npc": "archivist_bobbin", "title": "Debug-it: the house that un-restores", "format": "Debug-it",
+      "skills": ["state machines", "boundary values"],
+      "path": "labs/memory_vault/08_debug_engine_rules", "prereqs": ["bob-03"],
+      "unlocks": "Restored buildings stay restored."
+    },
+    {
+      "id": "bob-09", "npc": "archivist_bobbin", "title": "The long-term shelf (Tier 3)", "format": "Code-it",
+      "skills": ["promotion pipelines", "deduplication", "persistence"],
+      "path": "labs/memory_vault/09_long_term_store", "prereqs": ["bob-01"],
+      "unlocks": "Graduated memories are kept, and Bobbin can recall them."
+    },
+    {
+      "id": "bob-10", "npc": "archivist_bobbin", "title": "Embeddings replace word-overlap", "format": "Code-it",
+      "skills": ["embeddings", "cosine similarity", "vector search"],
+      "path": null, "prereqs": ["bob-09"],
+      "unlocks": "Bobbin finds memories by meaning, not matching words."
+    },
+    {
+      "id": "bob-11", "npc": "archivist_bobbin", "title": "Break-it: retrieval evals", "format": "Break-it",
+      "skills": ["eval sets", "recall and precision"],
+      "path": null, "prereqs": ["bob-10"],
+      "unlocks": "A score for how well Bobbin remembers."
+    },
+
+    {
+      "id": "cha-01", "npc": "auntie_lao_cha", "title": "The tutor prompt", "format": "Code-it",
+      "skills": ["system prompts", "few-shot examples"],
+      "path": null, "prereqs": ["pyd-09"],
+      "unlocks": "Auntie answers in Mandarin with pinyin and a gentle correction."
+    },
+    {
+      "id": "cha-02", "npc": "auntie_lao_cha", "title": "Predict-it: grade the tutor", "format": "Predict-it",
+      "skills": ["eval sets", "rubrics", "LLM-as-judge"],
+      "path": null, "prereqs": ["cha-01"],
+      "unlocks": "A scorecard for Auntie's answers."
+    },
+    {
+      "id": "cha-03", "npc": "auntie_lao_cha", "title": "Multi-turn conversation state", "format": "Code-it",
+      "skills": ["conversation history", "context budgeting"],
+      "path": null, "prereqs": ["cha-01"],
+      "unlocks": "A real back-and-forth dialogue at the tea counter."
+    },
+    {
+      "id": "cha-04", "npc": "auntie_lao_cha", "title": "Give Auntie a voice", "format": "Code-it",
+      "skills": ["TTS"],
+      "path": null, "prereqs": ["cha-03"],
+      "unlocks": "Spoken Mandarin practice."
+    },
+
+    {
+      "id": "fut-01", "npc": "future_gabrielle", "title": "The persona prompt", "format": "Code-it",
+      "skills": ["personas", "tone constraints"],
+      "path": null, "prereqs": ["pyd-09"],
+      "unlocks": "The comm-link replies with a real model."
+    },
+    {
+      "id": "fut-02", "npc": "future_gabrielle", "title": "Vision board as context", "format": "Code-it",
+      "skills": ["personalization", "long context"],
+      "path": null, "prereqs": ["fut-01"],
+      "unlocks": "Tune the radio to the self who reached your pinned goals."
+    },
+    {
+      "id": "fut-03", "npc": "future_gabrielle", "title": "Wire her to Bobbin's memory", "format": "Code-it",
+      "skills": ["retrieval-augmented generation"],
+      "path": null, "prereqs": ["fut-01", "bob-10"],
+      "unlocks": "She remembers what you told her."
+    },
+    {
+      "id": "fut-04", "npc": "future_gabrielle", "title": "Break-it: anti-guilt evals", "format": "Break-it",
+      "skills": ["adversarial testing", "persona evals"],
+      "path": null, "prereqs": ["fut-01"],
+      "unlocks": "Proof she never guilt-trips, even when provoked."
+    },
+
+    {
+      "id": "pin-01", "npc": "pin", "title": "Tool-calling basics", "format": "Code-it",
+      "skills": ["tool definitions", "the agent loop"],
+      "path": null, "prereqs": ["pyd-09"],
+      "unlocks": "Pin can call a function you wrote."
+    },
+    {
+      "id": "pin-02", "npc": "pin", "title": "The idea-filing tool", "format": "Code-it",
+      "skills": ["tools with side effects", "validation before writing"],
+      "path": null, "prereqs": ["pin-01"],
+      "unlocks": "Say an idea and Pin files it on the board."
+    },
+    {
+      "id": "pin-03", "npc": "pin", "title": "Rank and nudge", "format": "Code-it",
+      "skills": ["task queues", "prioritisation prompts"],
+      "path": null, "prereqs": ["pin-02"],
+      "unlocks": "Pin suggests the next quest."
+    },
+
+    {
+      "id": "moc-01", "npc": "mochi", "title": "A scheduled job", "format": "Code-it",
+      "skills": ["scheduling", "idempotent jobs"],
+      "path": null, "prereqs": ["pyd-05"],
+      "unlocks": "Mochi runs something on a timer."
+    },
+    {
+      "id": "moc-02", "npc": "mochi", "title": "The focus timer", "format": "Code-it",
+      "skills": ["state machines", "notifications"],
+      "path": null, "prereqs": ["moc-01"],
+      "unlocks": "A ten-minute reset sprint in the Safe House."
+    },
+    {
+      "id": "moc-03", "npc": "mochi", "title": "Sonic Resonance", "format": "Code-it",
+      "skills": ["third-party APIs", "behavioural correlation"],
+      "path": null, "prereqs": ["moc-02", "bob-10"], "bounty": "#003",
+      "unlocks": "Music matched to your focus."
+    },
+
+    {
+      "id": "sen-01", "npc": "sensei_pushup", "title": "An external API client", "format": "Code-it",
+      "skills": ["HTTP clients", "auth tokens", "retries"],
+      "path": null, "prereqs": ["pyd-05"],
+      "unlocks": "The Dojo can fetch a workout."
+    },
+    {
+      "id": "sen-02", "npc": "sensei_pushup", "title": "The webhook receiver", "format": "Code-it",
+      "skills": ["webhooks", "signature checks"],
+      "path": null, "prereqs": ["sen-01"], "bounty": "#002",
+      "unlocks": "Workouts arrive on their own."
+    },
+    {
+      "id": "sen-03", "npc": "sensei_pushup", "title": "Time-series store", "format": "Code-it",
+      "skills": ["time-series data", "aggregation"],
+      "path": null, "prereqs": ["sen-02"],
+      "unlocks": "Effort totals, with no streak counter."
+    },
+    {
+      "id": "sen-04", "npc": "sensei_pushup", "title": "The move deconstructor", "format": "Code-it",
+      "skills": ["prompt schemas", "DAG skill trees"],
+      "path": null, "prereqs": ["pyd-09"], "bounty": "#005",
+      "unlocks": "Any calisthenics skill broken into a progression tree."
+    },
+
+    {
+      "id": "dj-01", "npc": "tree_dj", "title": "RSS ingest", "format": "Code-it",
+      "skills": ["feeds", "parsing", "deduplication"],
+      "path": null, "prereqs": ["pyd-05"],
+      "unlocks": "Today's AI headlines reach the tree."
+    },
+    {
+      "id": "dj-02", "npc": "tree_dj", "title": "The summarise pipeline", "format": "Code-it",
+      "skills": ["LLM pipelines", "chunking"],
+      "path": null, "prereqs": ["dj-01", "pyd-09"], "bounty": "#001",
+      "unlocks": "A written morning bulletin."
+    },
+    {
+      "id": "dj-03", "npc": "tree_dj", "title": "Streaming output", "format": "Code-it",
+      "skills": ["streaming responses"],
+      "path": null, "prereqs": ["dj-02"],
+      "unlocks": "The bulletin types itself out live."
+    },
+    {
+      "id": "dj-04", "npc": "tree_dj", "title": "On air", "format": "Code-it",
+      "skills": ["TTS", "audio playback"],
+      "path": null, "prereqs": ["dj-03"],
+      "unlocks": "The Sanctuary News Network broadcasts."
+    }
+  ],
+  "ideas": [
+    "Progressive Chibi Unlock Renderer: multi-layer sprite customization (eyes, hair, skin tone, WearIt outfits)."
+  ]
+}

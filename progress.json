@@ -1,0 +1,97 @@
+{
+  "labs": {
+    "pyd-00": "passed",
+    "pyd-04": "passed",
+    "pyd-05": "passed",
+    "pyd-06": "available",
+    "pyd-07": "available",
+    "pyd-08": "available",
+    "pyd-09": "available",
+    "pyd-10": "planned",
+    "bob-01": "passed",
+    "bob-03": "passed",
+    "bob-06": "available",
+    "bob-07": "available",
+    "bob-08": "available",
+    "bob-09": "available",
+    "bob-10": "planned",
+    "bob-11": "planned",
+    "cha-01": "planned",
+    "cha-02": "planned",
+    "cha-03": "planned",
+    "cha-04": "planned",
+    "fut-01": "planned",
+    "fut-02": "planned",
+    "fut-03": "planned",
+    "fut-04": "planned",
+    "pin-01": "planned",
+    "pin-02": "planned",
+    "pin-03": "planned",
+    "moc-01": "planned",
+    "moc-02": "planned",
+    "moc-03": "planned",
+    "sen-01": "planned",
+    "sen-02": "planned",
+    "sen-03": "planned",
+    "sen-04": "planned",
+    "dj-01": "planned",
+    "dj-02": "planned",
+    "dj-03": "planned",
+    "dj-04": "planned"
+  },
+  "npcs": {
+    "prof_pydantic": {
+      "passed": 3,
+      "total": 8,
+      "power": 38
+    },
+    "archivist_bobbin": {
+      "passed": 2,
+      "total": 8,
+      "power": 25
+    },
+    "auntie_lao_cha": {
+      "passed": 0,
+      "total": 4,
+      "power": 0
+    },
+    "future_gabrielle": {
+      "passed": 0,
+      "total": 4,
+      "power": 0
+    },
+    "pin": {
+      "passed": 0,
+      "total": 3,
+      "power": 0
+    },
+    "mochi": {
+      "passed": 0,
+      "total": 3,
+      "power": 0
+    },
+    "sensei_pushup": {
+      "passed": 0,
+      "total": 4,
+      "power": 0
+    },
+    "tree_dj": {
+      "passed": 0,
+      "total": 4,
+      "power": 0
+    }
+  },
+  "places": {
+    "ai_academy": 38,
+    "memory_vault": 25,
+    "tea_house": 0,
+    "safe_house": 0,
+    "kinetic_dojo": 0,
+    "plaza": 0,
+    "tree": 0,
+    "radio": 0
+  },
+  "passed": 5,
+  "total": 38,
+  "signal": 13
+}
