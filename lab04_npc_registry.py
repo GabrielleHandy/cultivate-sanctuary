@@ -24,7 +24,7 @@ BEAT 2 — PREDICT (write your guesses BEFORE you code, then check later)
       My guess:          Nope not visible 
 
 ------------------------------------------------------------------------
-BEAT 3 — WORK: complete TODO 1, 2 and 3 below.
+BEAT 3 — WORK: done (schema, safe add, availability).
 Run:  python lab04_npc_registry.py
 ------------------------------------------------------------------------
 """
@@ -36,28 +36,10 @@ from pydantic import BaseModel, Field, ValidationError
 from world_state import SanctuaryWorld, create_initial_world
 
 
-# ─── TODO 1: THE NPC SCHEMA ────────────────────────────────────────────
-# Define the fields below. Think about which type or constraint protects
-# the village from bad data (this is the Professor's whole job!).
-#
-#   id            : str, lowercase slug like "prof_pydantic"
-#   name          : str, display name
-#   species       : str, e.g. "owl", "cat", "frog"
-#   building      : str, which sector_id they live in (checked in TODO 2)
-#   teaches       : str, the AI engineering concept they guide
-#   unlock_signal : int, world signal needed to meet them (0 to 100)
-#   status        : "hidden" | "met", defaults to "hidden"
-#   traits        : list of personality traits, e.g. ["strict", "secretly soft"]
-#   catchphrase   : str, optional (e.g. "Expected: str. Received: vibes.")
-#
-# TRAITS DESIGN QUESTION (decide it yourself, it's a real schema choice):
-#   Should `traits` be a free-form List[str], or a List[Literal[...]] from
-#   a fixed set? Free-form is flexible and shareable, while a fixed set is
-#   safer to validate. What would you want when other people's NPCs show up?
-#   Hint: Field(max_length=...) limits how many traits an NPC can have.
-#
-# HINTS: Field(ge=..., le=...), Literal[...], and
-#        Field(pattern=r"^[a-z_]+$") can all help.
+# ─── THE NPC SCHEMA ────────────────────────────────────────────────────
+# Every NPC is data, validated here (this is the Professor's whole job).
+# `traits` is free-form (max 4) for now. Fixed Literal set vs free-form is
+# still an open design question: see Bounty #006 in bounty_board.md.
 class NPC(BaseModel):
     id: str = Field(pattern=r"^[a-z_]+$")
     name: str
@@ -73,13 +55,8 @@ class NPC(BaseModel):
 class NPCRegistry(BaseModel):
     npcs: List[NPC] = Field(default_factory=list)
 
-    # ─── TODO 2: ADD AN NPC SAFELY ─────────────────────────────────────
-    # Raise ValueError (with a clear message) if:
-    #   a) another NPC already uses npc.id
-    #   b) npc.building is not the id of a sector in `world.sectors`
-    # Otherwise append it to self.npcs.
+    # Add an NPC safely: rejects duplicate ids and unknown buildings.
     def add(self, npc: NPC, world: SanctuaryWorld) -> None:
-        # <<< YOUR CODE FOR TODO 2 HERE >>>
         if any(existing.id == npc.id for existing in self.npcs):
             raise ValueError(f"Duplicate NPC ID: {npc.id}")
         # 2. Check for valid buildings in world.sectors
@@ -88,9 +65,8 @@ class NPCRegistry(BaseModel):
             raise ValueError(f"Unknown building: {npc.building}")
         # 3. Add to registry
         self.npcs.append(npc)
-    # ─── TODO 3: WHO CAN I MEET RIGHT NOW? ─────────────────────────────
-    # Return the NPCs whose unlock_signal <= world.signal_strength.
-    # Optional: if `building` is given, only return NPCs living there.
+
+    # NPCs whose unlock_signal <= world signal, optionally filtered by building.
     def available(self, world: SanctuaryWorld, building: Optional[str] = None) -> List[NPC]:
        unlocked_npcs = list(filter(lambda x: x.unlock_signal <= world.signal_strength, self.npcs))
        if (building):
@@ -133,26 +109,23 @@ if __name__ == "__main__":
     print("🦉 LAB 04: PROFESSOR PYDANTIC'S REGISTRY")
     print("=" * 68)
 
-    try:
-        for raw in SEED_NPCS:
-            print(professor_review(raw, registry, world))
+    for raw in SEED_NPCS:
+        print(professor_review(raw, registry, world))
 
-        print("\n🧪 Bad NPC #1: unknown building")
-        print(professor_review(dict(id="alien", name="Zorp", species="alien",
-              building="moon_base", teaches="nothing", unlock_signal=0), registry, world))
+    print("\n🧪 Bad NPC #1: unknown building")
+    print(professor_review(dict(id="alien", name="Zorp", species="alien",
+          building="moon_base", teaches="nothing", unlock_signal=0), registry, world))
 
-        print("\n🧪 Bad NPC #2: duplicate id")
-        print(professor_review(SEED_NPCS[0], registry, world))
+    print("\n🧪 Bad NPC #2: duplicate id")
+    print(professor_review(SEED_NPCS[0], registry, world))
 
-        print("\n🧪 Bad NPC #3: unlock_signal=150")
-        print(professor_review(dict(id="oops", name="Oops", species="owl",
-              building="neural_academy", teaches="bugs", unlock_signal=150), registry, world))
+    print("\n🧪 Bad NPC #3: unlock_signal=150")
+    print(professor_review(dict(id="oops", name="Oops", species="owl",
+          building="neural_academy", teaches="bugs", unlock_signal=150), registry, world))
 
-        print(f"\n📡 Signal {world.signal_strength}%. Meetable now:")
-        for n in registry.available(world):
-            print(f"   • {n.name} ({n.species}) @ {n.building}: teaches {n.teaches}")
-    except NotImplementedError as e:
-        print(f"⏳ TODOs pending: {e}")
+    print(f"\n📡 Signal {world.signal_strength}%. Meetable now:")
+    for n in registry.available(world):
+        print(f"   • {n.name} ({n.species}) @ {n.building}: teaches {n.teaches}")
 
     print("\nBEATS 4-6: compare to your predictions (REVEAL), note what differed (DIFF),")
     print("then write one sentence about what you learned in instructions.md (LOG).")

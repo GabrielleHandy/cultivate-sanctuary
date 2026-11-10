@@ -2,9 +2,8 @@
 ========================================================================
 🏛️ CULTIVATE // SANCTUARY — LAB 01: THE 3-TIER MEMORY CORE
 ========================================================================
-Welcome to the Memory Vault Lab!
-In this file, YOU write the core AI Engineering logic.
-Complete the 2 TODO blocks below to pass the Lab 01 Test Suite.
+The Memory Vault: short-term observation schema, Jaccard similarity,
+and the eviction / graduation engine. (Lab 01: complete.)
 ========================================================================
 """
 
@@ -100,12 +99,8 @@ class MemoryVault(BaseModel):
 
         # ─── CASE A: MATCH FOUND (REINFORCE & CHECK GRADUATION) ───────────
         if best_match:
-            # TODO 3A:
-            # 1. Increment best_match.access_count by 1
             best_match.access_count+= 1
-            # 2. Set best_match.last_accessed_session = session_num
             best_match.last_accessed_session = session_num
-            # 3. Append new_text to best_match.supporting_evidence
             best_match.supporting_evidence.append(new_text)
             if best_match.access_count >=3:
                 self.items.remove(best_match)
@@ -114,15 +109,10 @@ class MemoryVault(BaseModel):
                 return {"action": "reinforced", "item": best_match}   
 
         # ─── CASE B: NO MATCH (ADD NEW & HANDLE EVICTION IF FULL) ──────────
-        # TODO 3B: If self.items is at max_slots (len(self.items) >= self.max_slots):
+        # Vault full: evict the lowest access_count (oldest last_accessed_session on a tie).
         if len(self.items) >= self.max_slots:
             least_accessed = min(self.items, key=lambda x: (x.access_count, x.last_accessed_session))
             self.items.remove(least_accessed)
-        # We need to evict the entry with the lowest access_count!
-        # If there's a tie, evict the one with the oldest last_accessed_session.
-        # Hint: In Python, you can find the candidate using min():
-        # candidate = min(self.items, key=lambda x: (x.access_count, x.last_accessed_session))
-        # self.items.remove(candidate)
 
         # Create new item
         new_id = len(self.items) + 1
@@ -166,7 +156,7 @@ if __name__ == "__main__":
     print("🎉 ALL LAB 01 TESTS PASSED! MEMORY VAULT FOUNDATIONS ONLINE!")
     print("=" * 60)
 
-    # Test 4: MemoryVault process_observation (Active once you finish Exercise 3)
+    # Test 4: MemoryVault process_observation
     vault = MemoryVault(max_slots=2)
     res1 = vault.process_observation("Prefers gamified coding challenges", session_num=1)
     if res1:

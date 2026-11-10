@@ -4,13 +4,35 @@
 
 ---
 
-## 🔒 TIER 1 BOUNTIES (Unlocks after Stage 1 Core Engine is Online)
+## 🛠️ FIX LIST (from the 2026-11-09 code review)
+*(Bugs and loose ends in what is already built. Clear the 🔴 ones before logging real habits.)*
+
+- [ ] 🔴 **Second similar check-in returns a 500.** The engine reports `"reinforced"`, but `HabitLogResponse.memory_action` only allows `created / merged / graduated` (`lab05_api_gateway.py`). The power boost is saved before the error, so retrying double-counts.
+- [ ] 🔴 **`GET /api/v1/npcs` always fails.** `api.py` calls `.values()` on `registry.npcs`, which is a list.
+- [ ] 🔴 **Memory Vault is saved but never loaded.** `load_state()` restores the world and session only, so observations reset on every restart and can never reach 3 accesses across runs.
+- [ ] 🔴 **An oversized `power_boost` wipes the save.** `HabitLogRequest` has no limits (spec: text 3-280 chars, boost 1-50). A boost of 500 writes `power_level: 420`, the next load fails validation and silently starts fresh. Negative boosts drain power.
+- [ ] 🟡 **Restored buildings fall back to blueprint.** After a level-up sets `color_restored`, the next check-in at 30%+ power resets it to `blueprint_glow` (`sanctuary_engine.py`).
+- [ ] 🟡 **Graduated memories are dropped.** They leave the vault but there is no Tier 3 store to receive them.
+- [ ] 🟡 **`current_session` never advances**, so every check-in is "session 1" and the 5-session decay in the README cannot work.
+- [ ] 🟡 **Observation ids repeat** after an eviction or graduation (`new_id = len(items) + 1`).
+- [ ] 🟡 **Sector level can pass 10**, which also makes the save unloadable.
+- [ ] 🟡 **Fresh-start defaults are the old inflated numbers** (`world_state.py`: Academy 35, Vault 14, Dojo 15). The honest baselines only exist in `sanctuary_save.json`.
+- [ ] 🟡 **Running `python lab05_api_gateway.py` logs a real +20 habit** into the committed `sanctuary_save.json` every time. Point the demo at a temp file.
+- [ ] ⚪ `pyproject.toml` is missing `fastapi` and `uvicorn`; the README clone URL is still `your-username`.
+- [ ] ⚪ `index.html` and `cultivate_sanctuary_sim.html` are identical 5,441-line copies. Keep one, or generate the other.
+- [ ] ⚪ The `bounties` list in `world_state.py` has 4 of the 6 bounties below, and files #001 under `memory_vault`.
+- [ ] ⚪ The comm-link chat puts typed text straight into `innerHTML` (`index.html`); use `textContent`.
+
+---
+
+## 🔓 TIER 1 BOUNTIES (Unlocked: Stage 1 Core Engine is online)
 
 ### 🎯 BOUNTY #001: SANCTUARY NEWS NETWORK (SNN)
 - **Sector:** `05 · Town Bulletin / Broadcast Tower`
 - **The Vision:** An AI News Show hosted by cute pixel/2D news anchor avatars that summarizes daily AI breakthroughs and tech newsletters (inspired by Naya's morning AI news habit).
 - **AI Engineering Concepts Unlocked:** Web scraping / RSS ingestion, LLM summarization pipelines, TTS (Text-to-Speech / ElevenLabs API) + avatar lip-sync state.
-- **Prerequisite:** Core FastAPI server online (`Stage 1`).
+- **Prerequisite:** Core FastAPI server online (`Stage 1`). ✅ Met (`api.py`).
+- **Status:** Available, not started.
 
 ---
 
@@ -37,7 +59,8 @@
   - **Inside The Cipher Tea House:** Lantern-lit tea counter where you practice Mandarin dialogues with NPCs.
   - **Inside The Kinetic Dojo:** Training floor with calisthenics skill trees and workout timers.
 - **AI Engineering & Game Concepts Unlocked:** Scene state transitions (`overworld` <-> `interior_scene`), context-scoped AI agents per room, spatial trigger zones.
-- **Prerequisite:** Stage 2 Village Map Online.
+- **Prerequisite:** Stage 2 Village Map Online. ✅ Met.
+- **Status:** In progress. Isometric cutaway rooms and room entry exist in `index.html`; context-scoped AI agents per room are not built.
 
 ### 🎯 BOUNTY #005: KINETIC DECONSTRUCTOR & RPG SKILL TREE (Calisthenics AI Coach)
 - **Sector:** `04 · The Kinetic Dojo`
@@ -56,7 +79,8 @@
   - New NPCs appear as the village grows, so packs unlock by signal or level.
 - **AI Engineering Concepts Unlocked:** Pydantic schemas as a shareable contract, JSON/YAML import/export, schema versioning and migration, plugin/registry architecture, **prompt-injection safety for untrusted packs** (sanitize persona text, never run pack code), model-agnostic persona prompts.
 - **Design Notes:** Packs are **data only, never code**. Include a `schema_version` and a `pack_id`. Keep the personal Static-blocker data separate from any shared pack.
-- **Prerequisite:** Lab 04 (NPC Registry) complete, plus Stage 1 core engine.
+- **Prerequisite:** Lab 04 (NPC Registry) complete, plus Stage 1 core engine. ✅ Met.
+- **Status:** Available, not started. First decision: the trait `Literal` vs free-form question below.
 - **Personality System (Sims-style):** each NPC gets **up to 3 traits + 1 quirk**. Traits change how they teach (a *Strict* teacher gives tougher checks, a *Cheerful* one hypes small wins, an *Overthinker* says "ship it"), and clashing traits make funny banter. Candidate trait set:
   - **Emotional:** Cheerful, Gloomy, Hot-headed, Anxious, Dramatic, Serene, Sentimental, Sarcastic, Hopeful, Grumpy-but-Soft
   - **Social:** Outgoing, Shy, Charming, Blunt, Gossipy, Loyal, Mischievous, Nurturing, Competitive, Awkward
@@ -69,5 +93,5 @@
 
 ## 💡 RAW IDEA DROPZONE
 *(Drop quick 1-line ideas here anytime during a session—Future Gabrielle will turn them into official Bounties at Session Close!)*
-- **Progressive Chibi Unlock Renderer:** Fix and wire up multi-layer sprite customization (eyes, hair, skin tone, WearIt outfits) once the core AI backend is built.
+- **Progressive Chibi Unlock Renderer:** Fix and wire up multi-layer sprite customization (eyes, hair, skin tone, WearIt outfits) once the core AI backend is built. *(Backend is now built, so this is ready to become a Bounty.)*
 
